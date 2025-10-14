@@ -5,3 +5,8 @@ opencv-python
 pyshine
 pyyaml
 requests
+sounddevice
+matplotlib
+keras
+soundfile
+tensorflow

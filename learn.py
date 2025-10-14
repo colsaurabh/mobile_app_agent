@@ -15,18 +15,8 @@ app = args["app"]
 root_dir = args["root_dir"]
 
 
-print_with_color("Welcome to the exploration phase of AppAgent!\nThe exploration phase aims at generating "
-                 "documentations for UI elements through either autonomous exploration or human demonstration. "
-                 "Both options are task-oriented, which means you need to give a task description. During "
-                 "autonomous exploration, the agent will try to complete the task by interacting with possible "
-                 "elements on the UI within limited rounds. Documentations will be generated during the process of "
-                 "interacting with the correct elements to proceed with the task. Human demonstration relies on "
-                 "the user to show the agent how to complete the given task, and the agent will generate "
-                 "documentations for the elements interacted during the human demo. To start, please enter the "
-                 "main interface of the app on your phone.", "yellow")
-print_with_color("Choose from the following modes:\n1. autonomous exploration\n2. human demonstration\n"
-                 "Type 1 or 2.", "blue")
-user_input = ""
+print_with_color("Welcome to your L&T Finance agent", "yellow")
+user_input = "1"
 while user_input != "1" and user_input != "2":
     user_input = input()
 

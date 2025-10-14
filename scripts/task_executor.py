@@ -26,7 +26,7 @@ if configs["MODEL"] == "OpenAI":
                        api_key=configs["OPENAI_API_KEY"],
                        model=configs["OPENAI_API_MODEL"],
                        temperature=configs["TEMPERATURE"],
-                       max_tokens=configs["MAX_TOKENS"])
+                       max_completion_tokens=configs["MAX_COMPLETION_TOKENS"])
 elif configs["MODEL"] == "Qwen":
     mllm = QwenModel(api_key=configs["DASHSCOPE_API_KEY"],
                      model=configs["QWEN_MODEL"])

@@ -19,13 +19,13 @@ class BaseModel:
 
 
 class OpenAIModel(BaseModel):
-    def __init__(self, base_url: str, api_key: str, model: str, temperature: float, max_tokens: int):
+    def __init__(self, base_url: str, api_key: str, model: str, temperature: float, max_completion_tokens: int):
         super().__init__()
         self.base_url = base_url
         self.api_key = api_key
         self.model = model
         self.temperature = temperature
-        self.max_tokens = max_tokens
+        self.max_completion_tokens = max_completion_tokens
 
     def get_model_response(self, prompt: str, images: List[str]) -> (bool, str):
         content = [
@@ -55,9 +55,10 @@ class OpenAIModel(BaseModel):
                 }
             ],
             "temperature": self.temperature,
-            "max_tokens": self.max_tokens
+            "max_completion_tokens": self.max_completion_tokens
         }
         response = requests.post(self.base_url, headers=headers, json=payload).json()
+        print("Response from requests is ", response)
         if "error" not in response:
             usage = response["usage"]
             prompt_tokens = usage["prompt_tokens"]
@@ -100,6 +101,7 @@ class QwenModel(BaseModel):
 
 def parse_explore_rsp(rsp):
     try:
+        print_with_color(f"Original response: {rsp}", "yellow")
         observation = re.findall(r"Observation: (.*?)$", rsp, re.MULTILINE)[0]
         think = re.findall(r"Thought: (.*?)$", rsp, re.MULTILINE)[0]
         act = re.findall(r"Action: (.*?)$", rsp, re.MULTILINE)[0]

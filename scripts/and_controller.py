@@ -167,7 +167,9 @@ class AndroidController:
             offset = unit_dist, 0
         else:
             return "ERROR"
-        duration = 100 if quick else 400
+        print("x and x+its offset ",x,x+offset[0])
+        print("y and y+its offset ",y,y+offset[1])
+        duration = 200 if quick else 400
         adb_command = f"adb -s {self.device} shell input swipe {x} {y} {x+offset[0]} {y+offset[1]} {duration}"
         ret = execute_adb(adb_command)
         return ret
