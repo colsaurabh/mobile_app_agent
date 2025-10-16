@@ -7,6 +7,5 @@ pyyaml
 requests
 sounddevice
 matplotlib
-keras
+# Keras/TensorFlow are unused; remove to avoid version mismatch warnings
 soundfile
-tensorflow

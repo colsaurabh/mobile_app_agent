@@ -141,6 +141,11 @@ while round_count < configs["MAX_ROUNDS"]:
             break
         if act_name == "tap":
             _, area = res
+            if not isinstance(area, int) or area < 1 or area > len(elem_list):
+                print_with_color(f"Invalid element index: {area}. Valid range is 1..{len(elem_list)}.", "red")
+                last_act = "None"
+                time.sleep(configs["REQUEST_INTERVAL"])
+                continue
             tl, br = elem_list[area - 1].bbox
             x, y = (tl[0] + br[0]) // 2, (tl[1] + br[1]) // 2
             ret = controller.tap(x, y)
@@ -155,6 +160,11 @@ while round_count < configs["MAX_ROUNDS"]:
                 break
         elif act_name == "long_press":
             _, area = res
+            if not isinstance(area, int) or area < 1 or area > len(elem_list):
+                print_with_color(f"Invalid element index: {area}. Valid range is 1..{len(elem_list)}.", "red")
+                last_act = "None"
+                time.sleep(configs["REQUEST_INTERVAL"])
+                continue
             tl, br = elem_list[area - 1].bbox
             x, y = (tl[0] + br[0]) // 2, (tl[1] + br[1]) // 2
             ret = controller.long_press(x, y)
@@ -163,6 +173,11 @@ while round_count < configs["MAX_ROUNDS"]:
                 break
         elif act_name == "swipe":
             _, area, swipe_dir, dist = res
+            if not isinstance(area, int) or area < 1 or area > len(elem_list):
+                print_with_color(f"Invalid element index: {area}. Valid range is 1..{len(elem_list)}.", "red")
+                last_act = "None"
+                time.sleep(configs["REQUEST_INTERVAL"])
+                continue
             tl, br = elem_list[area - 1].bbox
             x, y = (tl[0] + br[0]) // 2, (tl[1] + br[1]) // 2
             ret = controller.swipe(x, y, swipe_dir, dist)
