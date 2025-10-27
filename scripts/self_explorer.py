@@ -177,9 +177,9 @@ while round_count < configs["MAX_ROUNDS"]:
     # elem_list = [e for e in merged if (e.bbox[1][0]-e.bbox[0][0]) * (e.bbox[1][1]-e.bbox[0][1]) > 2000]
 
 
-    screenshot_before = controller.get_screenshot(f"{round_count}_before", task_dir)
-    # xml_path = controller.get_xml(f"{round_count}", task_dir)
     dir_name = datetime.datetime.fromtimestamp(int(time.time())).strftime(f"task_{app}_%Y-%m-%d_%H-%M-%S")
+    screenshot_before = controller.get_screenshot(f"{dir_name}_{round_count}_before", task_dir)
+    # xml_path = controller.get_xml(f"{round_count}", task_dir)
     xml_path = controller.get_xml(f"{dir_name}_{round_count}", task_dir)
 
     # xml_path = controller.get_xml(f"{dir_name}_{round_count}", task_dir)
@@ -190,18 +190,18 @@ while round_count < configs["MAX_ROUNDS"]:
     elem_list = collect_interactive_elements(xml_path, min_area=2000, iou_thresh=0.6)
     print_with_color(f"Detected {len(elem_list)} interactive elements", "green")
 
-    draw_bbox_multi(screenshot_before, os.path.join(task_dir, f"{round_count}_before_labeled.png"), elem_list,
+    draw_bbox_multi(screenshot_before, os.path.join(task_dir, f"{dir_name}_{round_count}_before_labeled.png"), elem_list,
                     dark_mode=configs["DARK_MODE"])
 
     prompt = re.sub(r"<task_description>", task_desc, prompts.self_explore_task_template)
     prompt = re.sub(r"<last_act>", last_act, prompt)
-    base64_img_before = os.path.join(task_dir, f"{round_count}_before_labeled.png")
+    base64_img_before = os.path.join(task_dir, f"{dir_name}_{round_count}_before_labeled.png")
     print_with_color("Thinking about what to do in the next step...", "yellow")
     status, rsp = mllm.get_model_response(prompt, [base64_img_before])
 
     if status:
         with open(explore_log_path, "a") as logfile:
-            log_item = {"step": round_count, "prompt": prompt, "image": f"{round_count}_before_labeled.png",
+            log_item = {"step": round_count, "prompt": prompt, "image": f"{dir_name}_{round_count}_before_labeled.png",
                         "response": rsp}
             logfile.write(json.dumps(log_item) + "\n")
         res = parse_explore_rsp(rsp)
@@ -263,12 +263,12 @@ while round_count < configs["MAX_ROUNDS"]:
         print_with_color(rsp, "red")
         break
 
-    screenshot_after = controller.get_screenshot(f"{round_count}_after", task_dir)
+    screenshot_after = controller.get_screenshot(f"{dir_name}_{round_count}_after", task_dir)
     if screenshot_after == "ERROR":
         break
-    draw_bbox_multi(screenshot_after, os.path.join(task_dir, f"{round_count}_after_labeled.png"), elem_list,
+    draw_bbox_multi(screenshot_after, os.path.join(task_dir, f"{dir_name}_{round_count}_after_labeled.png"), elem_list,
                     dark_mode=configs["DARK_MODE"])
-    base64_img_after = os.path.join(task_dir, f"{round_count}_after_labeled.png")
+    base64_img_after = os.path.join(task_dir, f"{dir_name}_{round_count}_after_labeled.png")
 
     if act_name == "tap":
         prompt = re.sub(r"<action>", "tapping", prompts.self_explore_reflect_template)

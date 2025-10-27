@@ -15,15 +15,17 @@ app = args["app"]
 root_dir = args["root_dir"]
 
 
+# ToDo: Saurabh. Change later to Autonomous & Human
 print_with_color("Welcome to your L&T Finance agent", "yellow")
-print_with_color("Choose from the following modes:\n1. autonomous exploration\n2. human demonstration", "blue")
-user_input = ""
-while user_input != "1" and user_input != "2":
-    user_input = input()
+# print_with_color("Choose from the following modes:\n1. autonomous exploration\n2. human demonstration", "blue")
+user_input = "1"
+# while user_input != "1" and user_input != "2":
+#     user_input = input()
 
 if not app:
-    print_with_color("What is the name of the target app?", "blue")
-    app = input()
+    # ToDo: Saurabh. Change later to different apps too.
+    # print_with_color("What is the name of the target app?", "blue")
+    app = "planet"
     app = app.replace(" ", "")
 
 if user_input == "1":
