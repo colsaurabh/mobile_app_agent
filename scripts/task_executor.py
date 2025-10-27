@@ -19,23 +19,34 @@ parser.add_argument("--app")
 parser.add_argument("--root_dir", default="./")
 args = vars(parser.parse_args())
 
-configs = load_config()
+try:
+    configs = load_config()
+except Exception as e:
+    print_with_color(f"ERROR: Failed to load configuration: {e}", "red")
+    sys.exit(1)
 
-if configs["REASONING_MODEL"] == "OpenAI":
-    mllm = OpenAIModel(base_url=configs["OPENAI_API_BASE"],
-                       api_key=configs["OPENAI_API_KEY"],
-                       model=configs["OPENAI_API_MODEL"],
-                       temperature=configs["TEMPERATURE"],
-                       max_completion_tokens=configs["MAX_COMPLETION_TOKENS"])
-elif configs["REASONING_MODEL"] == "Gemini":
-    mllm = GeminiModel(api_base=configs["GEMINI_API_BASE"],
-                       api_key=configs["GEMINI_API_KEY"],
-                       model=configs["GEMINI_API_MODEL"],
-                       temperature=configs["TEMPERATURE"],
-                       max_completion_tokens=configs["MAX_COMPLETION_TOKENS"])
-else:
-    print_with_color(f"ERROR: Unsupported model type {configs['MODEL']}!", "red")
-    sys.exit()
+try:
+    if configs["REASONING_MODEL"] == "OpenAI":
+        mllm = OpenAIModel(base_url=configs["OPENAI_API_BASE"],
+                           api_key=configs["OPENAI_API_KEY"],
+                           model=configs["OPENAI_API_MODEL"],
+                           temperature=configs["TEMPERATURE"],
+                           max_completion_tokens=configs["MAX_COMPLETION_TOKENS"])
+    elif configs["REASONING_MODEL"] == "Gemini":
+        mllm = GeminiModel(api_base=configs["GEMINI_API_BASE"],
+                           api_key=configs["GEMINI_API_KEY"],
+                           model=configs["GEMINI_API_MODEL"],
+                           temperature=configs["TEMPERATURE"],
+                           max_completion_tokens=configs["MAX_COMPLETION_TOKENS"])
+    else:
+        print_with_color(f"ERROR: Unsupported model type {configs['MODEL']}!", "red")
+        sys.exit(1)
+except KeyError as e:
+    print_with_color(f"ERROR: Missing required configuration key: {e}", "red")
+    sys.exit(1)
+except Exception as e:
+    print_with_color(f"ERROR: Failed to initialize model: {e}", "red")
+    sys.exit(1)
 
 app = args["app"]
 root_dir = args["root_dir"]
@@ -45,17 +56,24 @@ if not app:
     app = input()
     app = app.replace(" ", "")
 
-app_dir = os.path.join(os.path.join(root_dir, "apps"), app)
-work_dir = os.path.join(root_dir, "tasks")
-if not os.path.exists(work_dir):
-    os.mkdir(work_dir)
-auto_docs_dir = os.path.join(app_dir, "auto_docs")
-demo_docs_dir = os.path.join(app_dir, "demo_docs")
-task_timestamp = int(time.time())
-dir_name = datetime.datetime.fromtimestamp(task_timestamp).strftime(f"task_{app}_%Y-%m-%d_%H-%M-%S")
-task_dir = os.path.join(work_dir, dir_name)
-os.mkdir(task_dir)
-log_path = os.path.join(task_dir, f"log_{app}_{dir_name}.txt")
+try:
+    app_dir = os.path.join(os.path.join(root_dir, "apps"), app)
+    work_dir = os.path.join(root_dir, "tasks")
+    if not os.path.exists(work_dir):
+        os.mkdir(work_dir)
+    auto_docs_dir = os.path.join(app_dir, "auto_docs")
+    demo_docs_dir = os.path.join(app_dir, "demo_docs")
+    task_timestamp = int(time.time())
+    dir_name = datetime.datetime.fromtimestamp(task_timestamp).strftime(f"task_{app}_%Y-%m-%d_%H-%M-%S")
+    task_dir = os.path.join(work_dir, dir_name)
+    os.mkdir(task_dir)
+    log_path = os.path.join(task_dir, f"log_{app}_{dir_name}.txt")
+except OSError as e:
+    print_with_color(f"ERROR: Failed to create directories: {e}", "red")
+    sys.exit(1)
+except Exception as e:
+    print_with_color(f"ERROR: Unexpected error during setup: {e}", "red")
+    sys.exit(1)
 
 no_doc = False
 if not os.path.exists(auto_docs_dir) and not os.path.exists(demo_docs_dir):
@@ -90,23 +108,29 @@ else:
                      f"selected automatically.", "yellow")
     docs_dir = demo_docs_dir
 
-device_list = list_all_devices()
-if not device_list:
-    print_with_color("ERROR: No device found!", "red")
-    sys.exit()
-print_with_color(f"List of devices attached:\n{str(device_list)}", "yellow")
-if len(device_list) == 1:
-    device = device_list[0]
-    print_with_color(f"Device selected: {device}", "yellow")
-else:
-    print_with_color("Please choose the Android device to start demo by entering its ID:", "blue")
-    device = input()
-controller = AndroidController(device)
-width, height = controller.get_device_size()
-if not width and not height:
-    print_with_color("ERROR: Invalid device size!", "red")
-    sys.exit()
-print_with_color(f"Screen resolution of {device}: {width}x{height}", "yellow")
+try:
+    device_list = list_all_devices()
+    if not device_list:
+        print_with_color("ERROR: No device found!", "red")
+        sys.exit(1)
+    print_with_color(f"List of devices attached:\n{str(device_list)}", "yellow")
+    
+    if len(device_list) == 1:
+        device = device_list[0]
+        print_with_color(f"Device selected: {device}", "yellow")
+    else:
+        print_with_color("Please choose the Android device to start demo by entering its ID:", "blue")
+        device = input()
+    
+    controller = AndroidController(device)
+    width, height = controller.get_device_size()
+    if not width and not height:
+        print_with_color("ERROR: Invalid device size!", "red")
+        sys.exit(1)
+    print_with_color(f"Screen resolution of {device}: {width}x{height}", "yellow")
+except Exception as e:
+    print_with_color(f"ERROR: Device initialization failed: {e}", "red")
+    sys.exit(1)
 
 if configs.get("ENABLE_VOICE", False):
     from utils import voice_ask
@@ -164,10 +188,15 @@ pending_human_input = None
 while round_count < configs["MAX_ROUNDS"]:
     round_count += 1
     print_with_color(f"Round {round_count}", "yellow")
-    screenshot_path = controller.get_screenshot(f"{dir_name}_{round_count}", task_dir)
-    xml_path = controller.get_xml(f"{dir_name}_{round_count}", task_dir)
-    if screenshot_path == "ERROR" or xml_path == "ERROR":
-        break
+
+    try:
+        screenshot_path = controller.get_screenshot(f"{dir_name}_{round_count}", task_dir)
+        xml_path = controller.get_xml(f"{dir_name}_{round_count}", task_dir)
+        if screenshot_path == "ERROR" or xml_path == "ERROR":
+            break
+    except Exception as e:
+        print_with_color(f"ERROR: Screenshot or XML generation failed: {e}", "red")
+        sys.exit(1)
 
     # This variable will hold the user's answer from the previous round
     human_answer_context = ""
@@ -198,44 +227,60 @@ while round_count < configs["MAX_ROUNDS"]:
                     break
             if not close:
                 elem_list.append(elem)
+    
         draw_bbox_multi(screenshot_path, os.path.join(task_dir, f"{dir_name}_{round_count}_labeled.png"), elem_list,
                         dark_mode=configs["DARK_MODE"])
         image = os.path.join(task_dir, f"{dir_name}_{round_count}_labeled.png")
+
+
         if no_doc:
             prompt = re.sub(r"<ui_document>", "", prompts.task_template)
         else:
             ui_doc = ""
-            for i, elem in enumerate(elem_list):
-                doc_path = os.path.join(docs_dir, f"{elem.uid}.txt")
-                if not os.path.exists(doc_path):
-                    continue
-                ui_doc += f"Documentation of UI element labeled with the numeric tag '{i + 1}':\n"
-                doc_content = ast.literal_eval(open(doc_path, "r").read())
-                if doc_content["tap"]:
-                    ui_doc += f"This UI element is clickable. {doc_content['tap']}\n\n"
-                if doc_content["text"]:
-                    ui_doc += f"This UI element can receive text input. The text input is used for the following " \
-                              f"purposes: {doc_content['text']}\n\n"
-                if doc_content["long_press"]:
-                    ui_doc += f"This UI element is long clickable. {doc_content['long_press']}\n\n"
-                if doc_content["v_swipe"]:
-                    ui_doc += f"This element can be swiped directly without tapping. You can swipe vertically on " \
-                              f"this UI element. {doc_content['v_swipe']}\n\n"
-                if doc_content["h_swipe"]:
-                    ui_doc += f"This element can be swiped directly without tapping. You can swipe horizontally on " \
-                              f"this UI element. {doc_content['h_swipe']}\n\n"
+            try:
+                for i, elem in enumerate(elem_list):
+                    doc_path = os.path.join(docs_dir, f"{elem.uid}.txt")
+                    if not os.path.exists(doc_path):
+                        continue
+                    ui_doc += f"Documentation of UI element labeled with the numeric tag '{i + 1}':\n"
+                    doc_content = ast.literal_eval(open(doc_path, "r").read())
+                    if doc_content["tap"]:
+                        ui_doc += f"This UI element is clickable. {doc_content['tap']}\n\n"
+                    if doc_content["text"]:
+                        ui_doc += f"This UI element can receive text input. The text input is used for the following " \
+                                f"purposes: {doc_content['text']}\n\n"
+                    if doc_content["long_press"]:
+                        ui_doc += f"This UI element is long clickable. {doc_content['long_press']}\n\n" 
+                    if doc_content["v_swipe"]:
+                        ui_doc += f"This element can be swiped directly without tapping. You can swipe vertically on " \
+                                f"this UI element. {doc_content['v_swipe']}\n\n"
+                    if doc_content["h_swipe"]:
+                        ui_doc += f"This element can be swiped directly without tapping. You can swipe horizontally on " \
+                                f"this UI element. {doc_content['h_swipe']}\n\n"
+            except Exception as e:
+                print_with_color(f"ERROR: Documentation fetching failed failed: {e}", "red")
+                ui_doc = ""
             print_with_color(f"Documentations retrieved for the current interface:\n{ui_doc}", "magenta")
             ui_doc = """
             You also have access to the following documentations that describes the functionalities of UI 
             elements you can interact on the screen. These docs are crucial for you to determine the target of your 
             next action. You should always prioritize these documented elements for interaction:""" + ui_doc
             prompt = re.sub(r"<ui_document>", ui_doc, prompts.task_template)
+
     prompt = re.sub(r"<task_description>", task_desc, prompt)
     prompt = re.sub(r"<last_act>", last_act, prompt)
     prompt = re.sub(r"<human_answer_context>", human_answer_context, prompt)
-    print_with_color("Thinking about what to do in the next step...", "yellow")
-    status, rsp = mllm.get_model_response(prompt, [image])
-    # print_with_color(f"Status as {status}, Model returned {rsp}", "green")
+
+    try:
+        print_with_color("Thinking about what to do in the next step...", "yellow")
+        status, rsp = mllm.get_model_response(prompt, [image])
+        # print_with_color(f"Status as {status}, Model returned {rsp}", "green")
+    except Exception as e:
+        print_with_color(f"ERROR: Model request failed: {e}", "red")
+        print_with_color("Retrying this round...", "yellow")
+        round_count -= 1
+        time.sleep(1.0)
+        continue
 
     if not status or not rsp or rsp.strip() == "":
         print_with_color("Model returned no actionable text. Retrying this round...", "yellow")
@@ -244,14 +289,26 @@ while round_count < configs["MAX_ROUNDS"]:
         continue
 
     if status:
-        with open(log_path, "a") as logfile:
-            log_item = {"step": round_count, "prompt": prompt, "image": f"{dir_name}_{round_count}_labeled.png",
-                        "response": rsp}
-            logfile.write(json.dumps(log_item) + "\n")
-        if grid_on:
-            res = parse_grid_rsp(rsp)
-        else:
-            res = parse_explore_rsp(rsp)
+        try:
+            with open(log_path, "a") as logfile:
+                log_item = {"step": round_count, "prompt": prompt, "image": f"{dir_name}_{round_count}_labeled.png",
+                            "response": rsp}
+                logfile.write(json.dumps(log_item) + "\n")
+        except (IOError, OSError) as e:
+            print_with_color(f"WARNING: Failed to write to log file: {e}", "yellow")
+
+        try:
+            if grid_on:
+                res = parse_grid_rsp(rsp)
+            else:
+                res = parse_explore_rsp(rsp)
+        except Exception as e:
+            print_with_color(f"ERROR: Failed to parse model response: {e}", "red")
+            print_with_color("Retrying this round...", "yellow")
+            round_count -= 1
+            time.sleep(1.0)
+            continue
+
         act_name = res[0]
         if act_name == "FINISH":
             if configs.get("ENABLE_VOICE", False):
@@ -283,65 +340,175 @@ while round_count < configs["MAX_ROUNDS"]:
         res = res[:-1]
     
         if act_name == "tap":
-            _, area = res
-            tl, br = elem_list[area - 1].bbox
-            x, y = (tl[0] + br[0]) // 2, (tl[1] + br[1]) // 2
-            ret = controller.tap(x, y)
-            if ret == "ERROR":
-                print_with_color("ERROR: tap execution failed", "red")
-                break
-        elif act_name == "text":
-            _, input_str = res
-
-            if input_str.strip() == "<HUMAN_INPUT>":
-                try:
-                    input_str = pending_human_input
-                except NameError:
-                    print_with_color('No stored input available. Ask first via ask_human("...").', "red")
-                    break
-            ret = controller.text(input_str)
-            if ret == "ERROR":
-                print_with_color("ERROR: text execution failed", "red")
-                break
-        elif act_name == "long_press":
-            _, area = res
-            tl, br = elem_list[area - 1].bbox
-            x, y = (tl[0] + br[0]) // 2, (tl[1] + br[1]) // 2
-            ret = controller.long_press(x, y)
-            if ret == "ERROR":
-                print_with_color("ERROR: long press execution failed", "red")
-                break
-        elif act_name == "swipe":
-            _, area, swipe_dir, dist = res
-            tl, br = elem_list[area - 1].bbox
-            x, y = (tl[0] + br[0]) // 2, (tl[1] + br[1]) // 2
-            ret = controller.swipe(x, y, swipe_dir, dist)
-            if ret == "ERROR":
-                print_with_color("ERROR: swipe execution failed", "red")
-                break
-        elif act_name == "grid":
-            grid_on = True
-        elif act_name == "tap_grid" or act_name == "long_press_grid":
-            _, area, subarea = res
-            x, y = area_to_xy(area, subarea)
-            if act_name == "tap_grid":
+            try:
+                _, area = res
+                if area < 1 or area > len(elem_list):
+                    print_with_color(f"ERROR: Invalid area index {area}. Available areas: 1-{len(elem_list)}", "red")
+                    continue
+                tl, br = elem_list[area - 1].bbox
+                x, y = (tl[0] + br[0]) // 2, (tl[1] + br[1]) // 2
                 ret = controller.tap(x, y)
                 if ret == "ERROR":
                     print_with_color("ERROR: tap execution failed", "red")
-                    break
-            else:
+                    continue
+            except (IndexError, ValueError) as e:
+                print_with_color(f"ERROR: Invalid tap parameters: {e}", "red")
+                continue
+            except Exception as e:
+                print_with_color(f"ERROR: Unexpected error during tap: {e}", "red")
+                continue
+        elif act_name == "text":
+            try:
+                _, input_str = res
+                
+                if input_str.strip() == "<HUMAN_INPUT>":
+                    try:
+                        input_str = pending_human_input
+                        if input_str is None:
+                            print_with_color('No stored input available. Ask first via ask_human("...").', "red")
+                            continue
+                    except NameError:
+                        print_with_color('No stored input available. Ask first via ask_human("...").', "red")
+                        continue
+                
+                ret = controller.text(input_str)
+                if ret == "ERROR":
+                    print_with_color("ERROR: text execution failed", "red")
+                    continue
+            except (ValueError, TypeError) as e:
+                print_with_color(f"ERROR: Invalid text parameters: {e}", "red")
+                continue
+            except Exception as e:
+                print_with_color(f"ERROR: Unexpected error during text input: {e}", "red")
+                continue
+        elif act_name == "long_press":
+            try:
+                _, area = res
+                if area < 1 or area > len(elem_list):
+                    print_with_color(f"ERROR: Invalid area index {area}. Available areas: 1-{len(elem_list)}", "red")
+                    continue
+                tl, br = elem_list[area - 1].bbox
+                x, y = (tl[0] + br[0]) // 2, (tl[1] + br[1]) // 2
                 ret = controller.long_press(x, y)
                 if ret == "ERROR":
-                    print_with_color("ERROR: tap execution failed", "red")
-                    break
+                    print_with_color("ERROR: long press execution failed", "red")
+                    continue
+            except (IndexError, ValueError) as e:
+                print_with_color(f"ERROR: Invalid long press parameters: {e}", "red")
+                continue
+            except Exception as e:
+                print_with_color(f"ERROR: Unexpected error during long press: {e}", "red")
+                continue
+        elif act_name == "swipe":
+            try:
+                _, area, swipe_dir, dist = res
+                
+                if area < 1 or area > len(elem_list):
+                    print_with_color(f"ERROR: Invalid area index {area}. Available areas: 1-{len(elem_list)}", "red")
+                    continue
+                    
+                tl, br = elem_list[area - 1].bbox
+                x, y = (tl[0] + br[0]) // 2, (tl[1] + br[1]) // 2
+                
+                # Validate swipe direction and distance
+                if swipe_dir not in ["up", "down", "left", "right"]:
+                    print_with_color(f"ERROR: Invalid swipe direction '{swipe_dir}'. Must be up, down, left, or right", "red")
+                    continue
+                    
+                if not isinstance(dist, (int, float)) or dist <= 0:
+                    print_with_color(f"ERROR: Invalid swipe distance '{dist}'. Must be a positive number", "red")
+                    continue
+                
+                ret = controller.swipe(x, y, swipe_dir, dist)
+                if ret == "ERROR":
+                    print_with_color("ERROR: swipe execution failed", "red")
+                    continue
+            except (IndexError, ValueError, TypeError) as e:
+                print_with_color(f"ERROR: Invalid swipe parameters: {e}", "red")
+                continue
+            except Exception as e:
+                print_with_color(f"ERROR: Unexpected error during swipe: {e}", "red")
+                continue
+        elif act_name == "grid":
+            grid_on = True
+        elif act_name == "tap_grid" or act_name == "long_press_grid":
+            try:
+                _, area, subarea = res
+                
+                # Validate area bounds
+                if area < 1 or area > (rows * cols):
+                    print_with_color(f"ERROR: Invalid grid area {area}. Available areas: 1-{rows * cols}", "red")
+                    continue
+                    
+                # Validate subarea
+                valid_subareas = ["top-left", "top", "top-right", "left", "center", "right", "bottom-left", "bottom", "bottom-right"]
+                if subarea not in valid_subareas:
+                    print_with_color(f"ERROR: Invalid subarea '{subarea}'. Must be one of: {', '.join(valid_subareas)}", "red")
+                    continue
+                
+                x, y = area_to_xy(area, subarea)
+                
+                # Check if area_to_xy returned valid coordinates
+                if x is None or y is None:
+                    print_with_color("ERROR: Failed to calculate grid coordinates", "red")
+                    continue
+                
+                if act_name == "tap_grid":
+                    ret = controller.tap(x, y)
+                    if ret == "ERROR":
+                        print_with_color("ERROR: grid tap execution failed", "red")
+                        continue
+                else:  # long_press_grid
+                    ret = controller.long_press(x, y)
+                    if ret == "ERROR":
+                        print_with_color("ERROR: grid long press execution failed", "red")
+                        continue
+            except (ValueError, TypeError) as e:
+                print_with_color(f"ERROR: Invalid grid action parameters: {e}", "red")
+                continue
+            except Exception as e:
+                print_with_color(f"ERROR: Unexpected error during grid action: {e}", "red")
+                continue
         elif act_name == "swipe_grid":
-            _, start_area, start_subarea, end_area, end_subarea = res
-            start_x, start_y = area_to_xy(start_area, start_subarea)
-            end_x, end_y = area_to_xy(end_area, end_subarea)
-            ret = controller.swipe_precise((start_x, start_y), (end_x, end_y))
-            if ret == "ERROR":
-                print_with_color("ERROR: tap execution failed", "red")
-                break
+            try:
+                _, start_area, start_subarea, end_area, end_subarea = res
+                
+                # Validate area bounds
+                max_areas = rows * cols
+                if start_area < 1 or start_area > max_areas:
+                    print_with_color(f"ERROR: Invalid start area {start_area}. Available areas: 1-{max_areas}", "red")
+                    continue
+                if end_area < 1 or end_area > max_areas:
+                    print_with_color(f"ERROR: Invalid end area {end_area}. Available areas: 1-{max_areas}", "red")
+                    continue
+                
+                # Validate subareas
+                valid_subareas = ["top-left", "top", "top-right", "left", "center", "right", "bottom-left", "bottom", "bottom-right"]
+                if start_subarea not in valid_subareas:
+                    print_with_color(f"ERROR: Invalid start subarea '{start_subarea}'. Must be one of: {', '.join(valid_subareas)}", "red")
+                    continue
+                if end_subarea not in valid_subareas:
+                    print_with_color(f"ERROR: Invalid end subarea '{end_subarea}'. Must be one of: {', '.join(valid_subareas)}", "red")
+                    continue
+                
+                start_x, start_y = area_to_xy(start_area, start_subarea)
+                end_x, end_y = area_to_xy(end_area, end_subarea)
+                
+                # Check if area_to_xy returned valid coordinates
+                if start_x is None or start_y is None or end_x is None or end_y is None:
+                    print_with_color("ERROR: Failed to calculate grid coordinates for swipe", "red")
+                    continue
+                
+                ret = controller.swipe_precise((start_x, start_y), (end_x, end_y))
+                if ret == "ERROR":
+                    print_with_color("ERROR: grid swipe execution failed", "red")
+                    continue
+            except (ValueError, TypeError) as e:
+                print_with_color(f"ERROR: Invalid grid swipe parameters: {e}", "red")
+                continue
+            except Exception as e:
+                print_with_color(f"ERROR: Unexpected error during grid swipe: {e}", "red")
+                continue
         elif act_name == "ask_human":
             # res = ["ask_human", question, last_act]
             _, question = res
