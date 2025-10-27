@@ -44,12 +44,24 @@ task_template = """You are an agent that is trained to perform some basic tasks 
 smartphone screenshot. The interactive UI elements on the screenshot are labeled with numeric tags starting from 1. The 
 numeric tag of each interactive element is located in the center of the element.
 
+<human_answer_context>
+
+**Important:** Never hallucinate or guess random element numbers that do not clearly match the UI elements in the screenshot. 
+**Important:** If you are unsure or confused about which element to interact with, immediately call the grid() function to bring up a grid overlay. 
+The grid overlay lets you pick a precise location on the screen without guessing element numbers.
+
 You can call the following functions to control the smartphone:
 
 1. tap(element: int)
 This function is used to tap an UI element shown on the smartphone screen.
 "element" is a numeric tag assigned to an UI element shown on the smartphone screen.
 A simple use case can be tap(5), which taps the UI element labeled with the number 5.
+When you tap on an input field, different interfaces might appear (numeric keypad, full keyboard, dropdown, or date picker). 
+Always observe what appears after tapping before deciding the next action. 
+Never assume the result of a tap before seeing the updated screen.
+If you are unsure whether the tapped element corresponds to the UI element referred to in the task, 
+call grid() to bring up a grid overlay to select a more precise area to tap.
+
 
 2. text(text_input: str)
 This function is used to insert text input in an input field/box. text_input is the string you want to insert and must 
@@ -76,6 +88,18 @@ You should call this function when you find the element you want to interact wit
 other elements with numeric tags cannot help with the task. The function will bring up a grid overlay to divide the 
 smartphone screen into small areas and this will give you more freedom to choose any part of the screen to tap, long 
 press, or swipe.
+
+5. ask_human(question: str)
+Use this function ONLY when you need to ask the user for a specific value required to complete the task, 
+such as a username, password, name, location, date of birth, PAN, or any personal detail that you cannot infer from the screen. 
+The "question" should be a clear, natural language question that will be displayed to the human user.
+Example: If you have successfully tapped on a "First Name" field and need to know what name to enter, 
+use the action: ask_human("What is the First Name?")
+Example: If you have successfully tapped on a "Location" field and need to know what location to select from dropdown, 
+use the action: ask_human("What is the Location?")
+**Important:** Before asking a question, always tap/select the input field or dropdown on the screen to activate it. 
+**Important:** Only after you have successfully selected the input element should you then ask the user for the input value. 
+
 <ui_document>
 The task you need to complete is to <task_description>. Your past actions to proceed with this task are summarized as 
 follows: <last_act>
@@ -94,6 +118,10 @@ task_template_grid = """You are an agent that is trained to perform some basic t
 a smartphone screenshot overlaid by a grid. The grid divides the screenshot into small square areas. Each area is 
 labeled with an integer in the top-left corner.
 
+<human_answer_context>
+
+**Important:** Never hallucinate or guess random element numbers that do not clearly match the UI elements in the screenshot. 
+
 You can call the following functions to control the smartphone:
 
 1. tap(area: int, subarea: str)
@@ -102,6 +130,11 @@ area shown on the smartphone screen. "subarea" is a string representing the exac
 It can take one of the nine values: center, top-left, top, top-right, left, right, bottom-left, bottom, and 
 bottom-right.
 A simple use case can be tap(5, "center"), which taps the exact center of the grid area labeled with the number 5.
+When you tap on an input field, different interfaces might appear (numeric keypad, full keyboard, dropdown, or date picker). 
+Always observe what appears after tapping before deciding the next action. 
+Never assume the result of a tap before seeing the updated screen.
+If you are unsure whether the tapped element corresponds to the UI element referred to in the task, 
+call grid() to bring up a grid overlay to select a more precise area to tap.
 
 2. long_press(area: int, subarea: str)
 This function is used to long press a grid area shown on the smartphone screen. "area" is the integer label assigned to 
@@ -121,6 +154,17 @@ The two subarea parameters can take one of the nine values: center, top-left, to
 bottom, and bottom-right.
 A simple use case can be swipe(21, "center", 25, "right"), which performs a swipe starting from the center of grid area 
 21 to the right part of grid area 25.
+
+4. ask_human(question: str)
+Use this function ONLY when you need to ask the user for a specific value required to complete the task, 
+such as a username, password, name, location, date of birth, PAN, or any personal detail that you cannot infer from the screen. 
+The "question" should be a clear, natural language question that will be displayed to the human user.
+Example: If you have successfully tapped on a "First Name" field and need to know what name to enter, 
+use the action: ask_human("What is the First Name?")
+Example: If you have successfully tapped on a "Location" field and need to know what location to select from dropdown, 
+use the action: ask_human("What is the Location?")
+**Important:** Before asking a question, always tap/select the input field or dropdown on the screen to activate it. 
+**Important:** Only after you have successfully selected the input element should you then ask the user for the input value. 
 
 The task you need to complete is to <task_description>. Your past actions to proceed with this task are summarized as 
 follows: <last_act>
@@ -145,12 +189,24 @@ You can call the following functions to interact with those labeled elements to 
 This function is used to tap an UI element shown on the smartphone screen.
 "element" is a numeric tag assigned to an UI element shown on the smartphone screen.
 A simple use case can be tap(5), which taps the UI element labeled with the number 5.
+When you tap on an input field, different interfaces might appear (numeric keypad, full keyboard, dropdown, or date picker). 
+Always observe what appears after tapping before deciding the next action. 
+Never assume the result of a tap before seeing the updated screen.
+If you are unsure whether the tapped element corresponds to the UI element referred to in the task, 
+call grid() to bring up a grid overlay to select a more precise area to tap.
 
 2. text(text_input: str)
 This function is used to insert text input in an input field/box. text_input is the string you want to insert and must 
 be wrapped with double quotation marks. A simple use case can be text("Hello, world!"), which inserts the string 
 "Hello, world!" into the input area on the smartphone screen. This function is only callable when you see a keyboard 
 showing in the lower half of the screen.
+
+# 2. text(element: int, input_str: str)
+# This function is used to type a given string into a specific UI element, which must be a text field.
+# "element" is the numeric tag of the target text field.
+# "input_str" is the string to be typed and must be wrapped with double quotation marks.
+# The agent will automatically tap the element to focus it before typing.
+# A simple use case can be text(15, "Hello, world!"), which taps element 15 and then types "Hello, world!".
 
 3. long_press(element: int)
 This function is used to long press an UI element shown on the smartphone screen.
@@ -221,3 +277,27 @@ Decision: SUCCESS
 Thought: <explain why you think the action successfully moved the task forward>
 Documentation: <describe the function of the UI element>
 """
+
+
+# ToDo later
+# 5. ask_human(question: str)
+# Use this function ONLY when you need to ask the user for a specific value required to complete the task, 
+# such as a username, password, or a personal detail that you cannot infer from the screen. 
+# The "question" should be a clear, natural language question that will be displayed to the human user.
+# Example: If you have successfully tapped on a "First Name" field and need to know what name to enter, 
+# use the action: ask_human("What is the First Name?")
+
+# Security policy:
+# - For any PIN, passcode, password, OTP, verification code, CVV, secret keys, or other sensitive credentials, NEVER guess or fabricate values.
+# - ALWAYS use ask_human("...") to request the exact value from the user and wait for the response before proceeding.
+# - Do not include sensitive values in summaries; only the action taken.
+
+# If a numeric keypad appears, use tap() to press digits. 
+# If a text keyboard appears, use text("..."). 
+# If a dropdown appears, select the correct option by tapping it. 
+
+
+# Before deciding any action:
+# - Compare the two screenshots.
+# - If the screenshots are visually similar, it means no significant change occurred. In this case, you should call grid() to bring up a grid overlay to allow more precise interaction.
+# - If the screenshots are not similar, consider the first screenshot as the main reference screen and proceed with the task accordingly.

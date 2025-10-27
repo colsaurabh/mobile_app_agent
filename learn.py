@@ -16,7 +16,8 @@ root_dir = args["root_dir"]
 
 
 print_with_color("Welcome to your L&T Finance agent", "yellow")
-user_input = "1"
+print_with_color("Choose from the following modes:\n1. autonomous exploration\n2. human demonstration", "blue")
+user_input = ""
 while user_input != "1" and user_input != "2":
     user_input = input()
 

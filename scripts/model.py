@@ -6,8 +6,10 @@ from http import HTTPStatus
 import requests
 import dashscope
 
-from utils import print_with_color, encode_image
+from utils import print_with_color, encode_image, speak
 
+from config import load_config
+configs = load_config()
 
 class BaseModel:
     def __init__(self):
@@ -71,32 +73,68 @@ class OpenAIModel(BaseModel):
         return True, response["choices"][0]["message"]["content"]
 
 
-class QwenModel(BaseModel):
-    def __init__(self, api_key: str, model: str):
+class GeminiModel(BaseModel):
+    def __init__(self, api_base: str, api_key: str, model: str, temperature: float, max_completion_tokens: int):
         super().__init__()
+        self.api_base = api_base.rstrip("/")
+        self.api_key = api_key
         self.model = model
-        dashscope.api_key = api_key
+        self.temperature = float(temperature)
+        self.max_completion_tokens = int(max_completion_tokens)
 
     def get_model_response(self, prompt: str, images: List[str]) -> (bool, str):
-        content = [{
-            "text": prompt
-        }]
+        # Build parts: text + inline images
+        parts = [{"text": prompt}]
         for img in images:
-            img_path = f"file://{img}"
-            content.append({
-                "image": img_path
+            base64_img = encode_image(img)
+            parts.append({
+                "inline_data": {
+                    "mime_type": "image/jpeg",
+                    "data": base64_img
+                }
             })
-        messages = [
-            {
-                "role": "user",
-                "content": content
+
+        url = f"{self.api_base}/v1beta/models/{self.model}:generateContent?key={self.api_key}"
+        payload = {
+            "contents": [
+                {
+                    "role": "user",
+                    "parts": parts
+                }
+            ],
+            "generationConfig": {
+                "temperature": self.temperature,
+                "maxOutputTokens": self.max_completion_tokens
             }
-        ]
-        response = dashscope.MultiModalConversation.call(model=self.model, messages=messages)
-        if response.status_code == HTTPStatus.OK:
-            return True, response.output.choices[0].message.content[0]["text"]
-        else:
-            return False, response.message
+        }
+
+        try:
+            response = requests.post(url, json=payload, timeout=120)
+            data = response.json()
+        except Exception as e:
+            return False, f"Request failed: {e}"
+
+        # Error handling
+        if "error" in data:
+            return False, data["error"].get("message", "Unknown Gemini API error")
+
+        candidates = data.get("candidates", [])
+        if not candidates:
+            return False, "No candidates returned by Gemini"
+
+        # Extract text from first candidate
+        parts_out = candidates[0].get("content", {}).get("parts", [])
+        text = "".join(p.get("text", "") for p in parts_out)
+
+        # Optional token usage logging (no pricing printed)
+        usage = data.get("usageMetadata")
+        if usage:
+            prompt_tokens = usage.get("promptTokenCount", 0)
+            completion_tokens = usage.get("candidatesTokenCount", 0)
+            total_tokens = usage.get("totalTokenCount", 0)
+            print_with_color(f"Token usage (Gemini) - prompt: {prompt_tokens}, completion: {completion_tokens}, total: {total_tokens}", "yellow")
+
+        return True, text if text else "``(No text in Gemini response)``"
 
 
 def parse_explore_rsp(rsp):
@@ -114,6 +152,8 @@ def parse_explore_rsp(rsp):
         print_with_color(act, "magenta")
         print_with_color("Summary:", "yellow")
         print_with_color(last_act, "magenta")
+        if configs.get("ENABLE_VOICE", False):
+            speak(last_act)
         if "FINISH" in act:
             return ["FINISH"]
         act_name = act.split("(")[0]
@@ -123,6 +163,29 @@ def parse_explore_rsp(rsp):
         elif act_name == "text":
             input_str = re.findall(r"text\((.*?)\)", act)[0][1:-1]
             return [act_name, input_str, last_act]
+        # elif act_name == "text":
+        #     # Extracts the element and string from text(12, "Some string")
+        #     params = re.findall(r'text\((.*?)\)', act)[0]
+        #     element_str, input_str_with_quotes = params.split(',', 1)
+        #     element = int(element_str.strip())
+        #     input_str = input_str_with_quotes.strip()[1:-1]  # Removes the surrounding quotes
+        #     return [act_name, element, input_str, last_act]
+        # elif act_name == "text":
+        #     params = re.findall(r"text\((.*?)\)", act)[0]
+        #     # Case 1: text(AREA, "string")
+        #     m = re.match(r"\s*(\d+)\s*,\s*\"(.*?)\"\s*$", params)
+        #     if m:
+        #         area = int(m.group(1))
+        #         input_str = m.group(2)
+        #         # return [act_name, area, input_str, last_act]
+        #         return [act_name, input_str, last_act]
+        #     # Case 2: text("string")
+        #     m = re.match(r"\s*\"(.*?)\"\s*$", params)
+        #     if m:
+        #         input_str = m.group(1)
+        #         return [act_name, input_str, last_act]
+        #     print_with_color("ERROR: Failed to parse parameters for text()", "red")
+        #     return ["ERROR"]
         elif act_name == "long_press":
             area = int(re.findall(r"long_press\((.*?)\)", act)[0])
             return [act_name, area, last_act]
@@ -135,6 +198,10 @@ def parse_explore_rsp(rsp):
             return [act_name, area, swipe_dir, dist, last_act]
         elif act_name == "grid":
             return [act_name]
+        elif act_name == "ask_human":
+            # Extracts the question from ask_human("Some question?")
+            question = re.findall(r'ask_human\("(.*?)"\)', act)[0]
+            return [act_name, question, last_act]
         else:
             print_with_color(f"ERROR: Undefined act {act_name}!", "red")
             return ["ERROR"]
@@ -158,6 +225,8 @@ def parse_grid_rsp(rsp):
         print_with_color(act, "magenta")
         print_with_color("Summary:", "yellow")
         print_with_color(last_act, "magenta")
+        if configs.get("ENABLE_VOICE", False):
+            speak(last_act)
         if "FINISH" in act:
             return ["FINISH"]
         act_name = act.split("(")[0]
@@ -180,6 +249,10 @@ def parse_grid_rsp(rsp):
             return [act_name + "_grid", start_area, start_subarea, end_area, end_subarea, last_act]
         elif act_name == "grid":
             return [act_name]
+        elif act_name == "ask_human":
+            # Extracts the question from ask_human("Some question?")
+            question = re.findall(r'ask_human\("(.*?)"\)', act)[0]
+            return [act_name, question, last_act]
         else:
             print_with_color(f"ERROR: Undefined act {act_name}!", "red")
             return ["ERROR"]
@@ -191,6 +264,7 @@ def parse_grid_rsp(rsp):
 
 def parse_reflect_rsp(rsp):
     try:
+        print_with_color(f"Original response: {rsp}", "yellow")
         decision = re.findall(r"Decision: (.*?)$", rsp, re.MULTILINE)[0]
         think = re.findall(r"Thought: (.*?)$", rsp, re.MULTILINE)[0]
         print_with_color("Decision:", "yellow")

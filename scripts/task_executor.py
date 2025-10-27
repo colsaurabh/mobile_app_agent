@@ -10,7 +10,7 @@ import time
 import prompts
 from config import load_config
 from and_controller import list_all_devices, AndroidController, traverse_tree
-from model import parse_explore_rsp, parse_grid_rsp, OpenAIModel, QwenModel
+from model import parse_explore_rsp, parse_grid_rsp, OpenAIModel, GeminiModel
 from utils import print_with_color, draw_bbox_multi, draw_grid
 
 arg_desc = "AppAgent Executor"
@@ -21,15 +21,18 @@ args = vars(parser.parse_args())
 
 configs = load_config()
 
-if configs["MODEL"] == "OpenAI":
+if configs["REASONING_MODEL"] == "OpenAI":
     mllm = OpenAIModel(base_url=configs["OPENAI_API_BASE"],
                        api_key=configs["OPENAI_API_KEY"],
                        model=configs["OPENAI_API_MODEL"],
                        temperature=configs["TEMPERATURE"],
                        max_completion_tokens=configs["MAX_COMPLETION_TOKENS"])
-elif configs["MODEL"] == "Qwen":
-    mllm = QwenModel(api_key=configs["DASHSCOPE_API_KEY"],
-                     model=configs["QWEN_MODEL"])
+elif configs["REASONING_MODEL"] == "Gemini":
+    mllm = GeminiModel(api_base=configs["GEMINI_API_BASE"],
+                       api_key=configs["GEMINI_API_KEY"],
+                       model=configs["GEMINI_API_MODEL"],
+                       temperature=configs["TEMPERATURE"],
+                       max_completion_tokens=configs["MAX_COMPLETION_TOKENS"])
 else:
     print_with_color(f"ERROR: Unsupported model type {configs['MODEL']}!", "red")
     sys.exit()
@@ -66,13 +69,14 @@ if not os.path.exists(auto_docs_dir) and not os.path.exists(demo_docs_dir):
     else:
         sys.exit()
 elif os.path.exists(auto_docs_dir) and os.path.exists(demo_docs_dir):
-    print_with_color(f"The app {app} has documentations generated from both autonomous exploration and human "
-                     f"demonstration. Which one do you want to use? Type 1 or 2.\n1. Autonomous exploration\n2. Human "
-                     f"Demonstration",
-                     "blue")
-    user_input = ""
-    while user_input != "1" and user_input != "2":
-        user_input = input()
+    # ToDo: Saurabh. Change later to Autonomous & Human
+    # print_with_color(f"The app {app} has documentations generated from both autonomous exploration and human "
+    #                  f"demonstration. Which one do you want to use? Type 1 or 2.\n1. Autonomous exploration\n2. Human "
+    #                  f"Demonstration",
+    #                  "blue")
+    user_input = "1"
+    # while user_input != "1" and user_input != "2":
+    #     user_input = input()
     if user_input == "1":
         docs_dir = auto_docs_dir
     else:
@@ -104,13 +108,30 @@ if not width and not height:
     sys.exit()
 print_with_color(f"Screen resolution of {device}: {width}x{height}", "yellow")
 
-print_with_color("Please enter the description of the task you want me to complete in a few sentences:", "blue")
-task_desc = input()
+if configs.get("ENABLE_VOICE", False):
+    from utils import voice_ask
+    try:
+        whisper_model = configs.get("OPENAI_WHISPER_MODEL", "whisper-1")
+        task_desc = voice_ask(
+            "Please enter the description of the task you want me to complete:",
+            api_key=configs["OPENAI_API_KEY"],
+            model=whisper_model,
+            max_seconds=10
+        )
+    except Exception:
+        print_with_color("Please enter the description of the task you want me to complete:", "blue")
+        task_desc = input()
+else:
+    print_with_color("Please enter the description of the task you want me to complete:", "blue")
+    task_desc = input()
 
 round_count = 0
 last_act = "None"
 task_complete = False
-grid_on = False
+if configs.get("ALWAYS_GRID", False):
+    grid_on = True
+else:
+    grid_on = False
 rows, cols = 0, 0
 
 
@@ -138,6 +159,7 @@ def area_to_xy(area, subarea):
         x, y = x_0 + (width // cols) // 2, y_0 + (height // rows) // 2
     return x, y
 
+pending_human_input = None
 
 while round_count < configs["MAX_ROUNDS"]:
     round_count += 1
@@ -146,6 +168,13 @@ while round_count < configs["MAX_ROUNDS"]:
     xml_path = controller.get_xml(f"{dir_name}_{round_count}", task_dir)
     if screenshot_path == "ERROR" or xml_path == "ERROR":
         break
+
+    # This variable will hold the user's answer from the previous round
+    human_answer_context = ""
+    if pending_human_input:
+        human_answer_context = f"You previously asked a question and the human responded with: '{pending_human_input}'. Use this information for your next action."
+        pending_human_input = None
+
     if grid_on:
         rows, cols = draw_grid(screenshot_path, os.path.join(task_dir, f"{dir_name}_{round_count}_grid.png"))
         image = os.path.join(task_dir, f"{dir_name}_{round_count}_grid.png")
@@ -203,8 +232,16 @@ while round_count < configs["MAX_ROUNDS"]:
             prompt = re.sub(r"<ui_document>", ui_doc, prompts.task_template)
     prompt = re.sub(r"<task_description>", task_desc, prompt)
     prompt = re.sub(r"<last_act>", last_act, prompt)
+    prompt = re.sub(r"<human_answer_context>", human_answer_context, prompt)
     print_with_color("Thinking about what to do in the next step...", "yellow")
     status, rsp = mllm.get_model_response(prompt, [image])
+    # print_with_color(f"Status as {status}, Model returned {rsp}", "green")
+
+    if not status or not rsp or rsp.strip() == "":
+        print_with_color("Model returned no actionable text. Retrying this round...", "yellow")
+        round_count -= 1  # keep the same round index for next attempt
+        time.sleep(1.0)
+        continue
 
     if status:
         with open(log_path, "a") as logfile:
@@ -217,12 +254,34 @@ while round_count < configs["MAX_ROUNDS"]:
             res = parse_explore_rsp(rsp)
         act_name = res[0]
         if act_name == "FINISH":
-            task_complete = True
-            break
+            if configs.get("ENABLE_VOICE", False):
+                from utils import voice_ask
+                try:
+                    whisper_model = configs.get("OPENAI_WHISPER_MODEL", "whisper-1")
+                    task_desc = voice_ask(
+                        "Please describe your next question or say quit or exit to leave",
+                        api_key=configs["OPENAI_API_KEY"],
+                        model=whisper_model,
+                        max_seconds=10
+                    )
+                except Exception:
+                    print_with_color("Please enter the description of the task you want me to complete:", "blue")
+                    task_desc = input()
+            else:
+                print_with_color("Please enter your next question (or type 'q' or 'Q' to stop):", "blue")
+                task_desc = input()
+
+            if task_desc.lower() in ("q", "quit", "exit"):
+                task_complete = True
+                break                
+            last_act = "None"
+            continue
         if act_name == "ERROR":
             break
+        
         last_act = res[-1]
         res = res[:-1]
+    
         if act_name == "tap":
             _, area = res
             tl, br = elem_list[area - 1].bbox
@@ -233,6 +292,13 @@ while round_count < configs["MAX_ROUNDS"]:
                 break
         elif act_name == "text":
             _, input_str = res
+
+            if input_str.strip() == "<HUMAN_INPUT>":
+                try:
+                    input_str = pending_human_input
+                except NameError:
+                    print_with_color('No stored input available. Ask first via ask_human("...").', "red")
+                    break
             ret = controller.text(input_str)
             if ret == "ERROR":
                 print_with_color("ERROR: text execution failed", "red")
@@ -276,8 +342,44 @@ while round_count < configs["MAX_ROUNDS"]:
             if ret == "ERROR":
                 print_with_color("ERROR: tap execution failed", "red")
                 break
+        elif act_name == "ask_human":
+            # res = ["ask_human", question, last_act]
+            _, question = res
+            print_with_color(f"Saurabh: ask_human question is as {question}", "green")
+            try:
+                if configs.get("ENABLE_VOICE", False):
+                    from utils import voice_ask
+                    whisper_model = configs.get("OPENAI_WHISPER_MODEL", "whisper-1")
+                    answer = voice_ask(
+                        question,
+                        api_key=configs["OPENAI_API_KEY"],
+                        model=whisper_model,
+                        max_seconds=10
+                    )
+                else:
+                    print_with_color(question, "blue")
+                    answer = input()
+            except Exception:
+                print_with_color(question, "blue")
+                answer = input()
+
+            # # Type the answer (assumes the correct input field is focused by prior action)
+            # ret = controller.text(answer)
+            # print_with_color(f"Saurabh: ret value is from writting text is: {ret}", "green")
+            # if ret == "ERROR":
+            #     print_with_color("ERROR: text execution failed after ask_human", "red")
+            #     break
+
+            pending_human_input = answer
+            print_with_color(f'Saurabh: Captured input. Human input as {pending_human_input}.', "yellow")
+            continue
+
         if act_name != "grid":
-            grid_on = False
+            if configs.get("ALWAYS_GRID", False):
+                grid_on = True
+            else:
+                grid_on = False
+
         time.sleep(configs["REQUEST_INTERVAL"])
     else:
         print_with_color(rsp, "red")

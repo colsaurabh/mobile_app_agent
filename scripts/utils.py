@@ -4,6 +4,20 @@ import pyshine as ps
 
 from colorama import Fore, Style
 
+from PIL import Image
+import io
+import base64
+
+import os
+import subprocess
+import tempfile
+import requests
+import sys
+import sounddevice as sd
+import soundfile as sf
+
+# from config import load_config
+# configs = load_config()
 
 def print_with_color(text: str, color=""):
     if color == "red":
@@ -60,25 +74,29 @@ def draw_bbox_multi(img_path, output_path, elem_list, record_mode=False, dark_mo
     return imgcv
 
 
-def draw_grid(img_path, output_path):
-    def get_unit_len(n):
-        for i in range(1, n + 1):
-            if n % i == 0 and 120 <= i <= 180:
-                return i
-        return -1
+def draw_grid(img_path, output_path, rows=None, cols=None, min_cell_px=40):
+    """
+    Draw a grid on the image.
+    - If rows/cols are provided, they are used directly.
+    - Otherwise, grid density is derived from min_cell_px (smaller => more cells).
+    """
+    def clamp(n, lo, hi):
+        return max(lo, min(hi, n))
 
     image = cv2.imread(img_path)
     height, width, _ = image.shape
     color = (255, 116, 113)
-    unit_height = get_unit_len(height)
-    if unit_height < 0:
-        unit_height = 120
-    unit_width = get_unit_len(width)
-    if unit_width < 0:
-        unit_width = 120
-    thick = int(unit_width // 50)
-    rows = height // unit_height
-    cols = width // unit_width
+
+    if rows is None or cols is None:
+        # Derive rows/cols from desired minimum cell size
+        rows = clamp(height // min_cell_px, 1, 100)
+        cols = clamp(width // min_cell_px, 1, 100)
+
+    # Compute actual cell size from rows/cols
+    unit_height = max(1, height // rows)
+    unit_width = max(1, width // cols)
+    thick = max(1, int(max(unit_width, unit_height) // 50))
+
     for i in range(rows):
         for j in range(cols):
             label = i * cols + j + 1
@@ -87,14 +105,79 @@ def draw_grid(img_path, output_path):
             right = int((j + 1) * unit_width)
             bottom = int((i + 1) * unit_height)
             cv2.rectangle(image, (left, top), (right, bottom), color, thick // 2)
-            cv2.putText(image, str(label), (left + int(unit_width * 0.05) + 3, top + int(unit_height * 0.3) + 3), 0,
-                        int(0.01 * unit_width), (0, 0, 0), thick)
-            cv2.putText(image, str(label), (left + int(unit_width * 0.05), top + int(unit_height * 0.3)), 0,
-                        int(0.01 * unit_width), color, thick)
+            cv2.putText(image, str(label),
+                        (left + int(unit_width * 0.05), top + int(unit_height * 0.3)),
+                        0, max(0.5, 0.01 * unit_width), color, thick)
     cv2.imwrite(output_path, image)
     return rows, cols
 
+def encode_image(image_path, max_width=800, quality=75):
+    with Image.open(image_path) as img:
+        # Resize proportionally if width is larger than max_width
+        if img.width > max_width:
+            ratio = max_width / float(img.width)
+            new_height = int(float(img.height) * ratio)
+            img = img.resize((max_width, new_height), Image.ANTIALIAS)
+        # Save to bytes buffer with lower quality
+        buffered = io.BytesIO()
+        img.save(buffered, format="JPEG", quality=quality)
+        # Encode base64 string
+        img_str = base64.b64encode(buffered.getvalue()).decode("utf-8")
+        return img_str
 
-def encode_image(image_path):
-    with open(image_path, "rb") as image_file:
-        return base64.b64encode(image_file.read()).decode('utf-8')
+
+def speak(text: str):
+    # macOS native TTS; no-op fallback on other OSes
+    try:
+        if sys.platform == "darwin":
+            subprocess.run(["say", text], check=False)
+    except Exception:
+        pass
+
+def _record_wav_tmp(seconds=12, samplerate=16000, channels=1):
+    # Record audio from default input into a temp wav file and return its path
+    audio = sd.rec(int(seconds * samplerate), samplerate=samplerate, channels=channels, dtype="int16")
+    sd.wait()
+    fd, path = tempfile.mkstemp(suffix=".wav")
+    os.close(fd)
+    sf.write(path, audio, samplerate)
+    return path
+
+def transcribe_with_openai(wav_path: str, api_key: str, model: str = "whisper-1"):
+    # url = configs.get("OPENAI_API_WHISPER_URL", "https://api.openai.com/v1/audio/transcriptions")
+    url = "https://api.openai.com/v1/audio/transcriptions"
+    headers = {"Authorization": f"Bearer {api_key}"}
+    with open(wav_path, "rb") as f:
+        files = {
+            "file": (os.path.basename(wav_path), f, "audio/wav"),
+            "model": (None, model),
+        }
+        resp = requests.post(url, headers=headers, files=files, timeout=60)
+    resp.raise_for_status()
+    data = resp.json()
+    return data.get("text", "").strip()
+
+def voice_ask(prompt_text: str, api_key: str, model: str = "whisper-1", max_seconds: int = 15) -> str:
+    # Speak prompt, record answer, transcribe; fallback to keyboard if empty/failed
+    print_with_color(prompt_text, "blue")
+    speak(prompt_text)
+    try:
+        wav_path = _record_wav_tmp(seconds=max_seconds)
+        try:
+            text = transcribe_with_openai(wav_path, api_key=api_key, model=model)
+            cost_per_minute = 0.006
+            usage_cost = (max_seconds / 60) * cost_per_minute
+            print_with_color(f"Estimated transcription cost: ${usage_cost:.6f}", "yellow")
+            speak(text)
+        finally:
+            try:
+                os.remove(wav_path)
+            except Exception:
+                pass
+        if text:
+            print_with_color(f"(Heard) {text}", "cyan")
+            return text
+    except Exception as e:
+        print_with_color(f"Voice input failed: {e}", "red")
+    # Fallback to manual input
+    return input()

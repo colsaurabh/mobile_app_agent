@@ -9,8 +9,8 @@ import time
 
 import prompts
 from config import load_config
-from and_controller import list_all_devices, AndroidController, traverse_tree
-from model import parse_explore_rsp, parse_reflect_rsp, OpenAIModel, QwenModel
+from and_controller import list_all_devices, AndroidController
+from model import parse_explore_rsp, parse_reflect_rsp, OpenAIModel, GeminiModel
 from utils import print_with_color, draw_bbox_multi
 
 arg_desc = "AppAgent - Autonomous Exploration"
@@ -21,15 +21,18 @@ args = vars(parser.parse_args())
 
 configs = load_config()
 
-if configs["MODEL"] == "OpenAI":
+if configs["REASONING_MODEL"] == "OpenAI":
     mllm = OpenAIModel(base_url=configs["OPENAI_API_BASE"],
                        api_key=configs["OPENAI_API_KEY"],
                        model=configs["OPENAI_API_MODEL"],
                        temperature=configs["TEMPERATURE"],
                        max_completion_tokens=configs["MAX_COMPLETION_TOKENS"])
-elif configs["MODEL"] == "Qwen":
-    mllm = QwenModel(api_key=configs["DASHSCOPE_API_KEY"],
-                     model=configs["QWEN_MODEL"])
+elif configs["REASONING_MODEL"] == "Gemini":
+    mllm = GeminiModel(api_base=configs["GEMINI_API_BASE"],
+                       api_key=configs["GEMINI_API_KEY"],
+                       model=configs["GEMINI_API_MODEL"],
+                       temperature=configs["TEMPERATURE"],
+                       max_completion_tokens=configs["MAX_COMPLETION_TOKENS"])
 else:
     print_with_color(f"ERROR: Unsupported model type {configs['MODEL']}!", "red")
     sys.exit()
@@ -79,7 +82,7 @@ if not width and not height:
     sys.exit()
 print_with_color(f"Screen resolution of {device}: {width}x{height}", "yellow")
 
-print_with_color("Please enter the description of the task you want me to complete in a few sentences:", "blue")
+print_with_color("Please enter the description of the task you want me to complete:", "blue")
 task_desc = input()
 
 round_count = 0
@@ -90,34 +93,103 @@ task_complete = False
 while round_count < configs["MAX_ROUNDS"]:
     round_count += 1
     print_with_color(f"Round {round_count}", "yellow")
+    # screenshot_before = controller.get_screenshot(f"{round_count}_before", task_dir)
+    # xml_path = controller.get_xml(f"{round_count}", task_dir)
+    # if screenshot_before == "ERROR" or xml_path == "ERROR":
+    #     break
+    # clickable_list = []
+    # focusable_list = []
+    # traverse_tree(xml_path, clickable_list, "clickable", True)
+    # traverse_tree(xml_path, focusable_list, "focusable", True)
+    # elem_list = []
+    # for elem in clickable_list:
+    #     if elem.uid in useless_list:
+    #         continue
+    #     elem_list.append(elem)
+    # for elem in focusable_list:
+    #     if elem.uid in useless_list:
+    #         continue
+    #     bbox = elem.bbox
+    #     center = (bbox[0][0] + bbox[1][0]) // 2, (bbox[0][1] + bbox[1][1]) // 2
+    #     close = False
+    #     for e in clickable_list:
+    #         bbox = e.bbox
+    #         center_ = (bbox[0][0] + bbox[1][0]) // 2, (bbox[0][1] + bbox[1][1]) // 2
+    #         dist = (abs(center[0] - center_[0]) ** 2 + abs(center[1] - center_[1]) ** 2) ** 0.5
+    #         if dist <= configs["MIN_DIST"]:
+    #             close = True
+    #             break
+    #     if not close:
+    #         elem_list.append(elem)
+    # draw_bbox_multi(screenshot_before, os.path.join(task_dir, f"{round_count}_before_labeled.png"), elem_list,
+    #                 dark_mode=configs["DARK_MODE"])
+
+
+
+    # screenshot_before = controller.get_screenshot(f"{round_count}_before", task_dir)
+    # xml_path = controller.get_xml(f"{round_count}", task_dir)
+    # if screenshot_before == "ERROR" or xml_path == "ERROR":
+    #     break
+
+    # # Collect a broader set of interactive candidates
+    # clickable_list = []
+    # focusable_list = []
+    # long_clickable_list = []
+    # scrollable_list = []
+
+    # traverse_tree(xml_path, clickable_list, "clickable", True)
+    # traverse_tree(xml_path, focusable_list, "focusable", True)
+    # traverse_tree(xml_path, long_clickable_list, "long-clickable", True)
+    # traverse_tree(xml_path, scrollable_list, "scrollable", True)
+
+    # # Merge with relaxed de-duplication (by IoU, not just center distance)
+    # def iou(boxA, boxB):
+    #     (ax1, ay1), (ax2, ay2) = boxA
+    #     (bx1, by1), (bx2, by2) = boxB
+    #     x_left = max(ax1, bx1)
+    #     y_top = max(ay1, by1)
+    #     x_right = min(ax2, bx2)
+    #     y_bottom = min(ay2, by2)
+    #     if x_right <= x_left or y_bottom <= y_top:
+    #         return 0.0
+    #     inter = (x_right - x_left) * (y_bottom - y_top)
+    #     areaA = (ax2 - ax1) * (ay2 - ay1)
+    #     areaB = (bx2 - bx1) * (by2 - by1)
+    #     return inter / float(areaA + areaB - inter + 1e-6)
+
+    # merged = []
+    # def add_if_new(e):
+    #     for m in merged:
+    #         if iou(m.bbox, e.bbox) > 0.6:
+    #             return
+    #     merged.append(e)
+
+    # for e in clickable_list:
+    #     add_if_new(e)
+    # for e in focusable_list:
+    #     add_if_new(e)
+    # for e in long_clickable_list:
+    #     add_if_new(e)
+    # for e in scrollable_list:
+    #     add_if_new(e)
+
+    # # Optional: drop very tiny boxes (noise)
+    # elem_list = [e for e in merged if (e.bbox[1][0]-e.bbox[0][0]) * (e.bbox[1][1]-e.bbox[0][1]) > 2000]
+
+
     screenshot_before = controller.get_screenshot(f"{round_count}_before", task_dir)
-    xml_path = controller.get_xml(f"{round_count}", task_dir)
+    # xml_path = controller.get_xml(f"{round_count}", task_dir)
+    dir_name = datetime.datetime.fromtimestamp(int(time.time())).strftime(f"task_{app}_%Y-%m-%d_%H-%M-%S")
+    xml_path = controller.get_xml(f"{dir_name}_{round_count}", task_dir)
+
+    # xml_path = controller.get_xml(f"{dir_name}_{round_count}", task_dir)
     if screenshot_before == "ERROR" or xml_path == "ERROR":
         break
-    clickable_list = []
-    focusable_list = []
-    traverse_tree(xml_path, clickable_list, "clickable", True)
-    traverse_tree(xml_path, focusable_list, "focusable", True)
+    from and_controller import collect_interactive_elements
     elem_list = []
-    for elem in clickable_list:
-        if elem.uid in useless_list:
-            continue
-        elem_list.append(elem)
-    for elem in focusable_list:
-        if elem.uid in useless_list:
-            continue
-        bbox = elem.bbox
-        center = (bbox[0][0] + bbox[1][0]) // 2, (bbox[0][1] + bbox[1][1]) // 2
-        close = False
-        for e in clickable_list:
-            bbox = e.bbox
-            center_ = (bbox[0][0] + bbox[1][0]) // 2, (bbox[0][1] + bbox[1][1]) // 2
-            dist = (abs(center[0] - center_[0]) ** 2 + abs(center[1] - center_[1]) ** 2) ** 0.5
-            if dist <= configs["MIN_DIST"]:
-                close = True
-                break
-        if not close:
-            elem_list.append(elem)
+    elem_list = collect_interactive_elements(xml_path, min_area=2000, iou_thresh=0.6)
+    print_with_color(f"Detected {len(elem_list)} interactive elements", "green")
+
     draw_bbox_multi(screenshot_before, os.path.join(task_dir, f"{round_count}_before_labeled.png"), elem_list,
                     dark_mode=configs["DARK_MODE"])
 

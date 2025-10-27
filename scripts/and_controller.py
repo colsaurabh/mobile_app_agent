@@ -85,6 +85,80 @@ def traverse_tree(xml_path, elem_list, attrib, add_index=False):
         if event == 'end':
             path.pop()
 
+def collect_interactive_elements(xml_path, min_area=2000, iou_thresh=0.6):
+    elems = []
+    path = []
+    # Gather all nodes first so we can apply heuristics after traversal
+    for event, elem in ET.iterparse(xml_path, ['start', 'end']):
+        if event == 'start':
+            path.append(elem)
+            try:
+                bounds = elem.attrib.get("bounds")
+                if not bounds:
+                    continue
+                b = bounds[1:-1].split("][")
+                x1, y1 = map(int, b[0].split(","))
+                x2, y2 = map(int, b[1].split(","))
+                w, h = x2 - x1, y2 - y1
+                area = w * h
+                if area < min_area:
+                    continue
+
+                # Heuristics for “interactive”
+                clickable = elem.attrib.get("clickable") == "true"
+                focusable = elem.attrib.get("focusable") == "true"
+                long_clickable = elem.attrib.get("long-clickable") == "true"
+                scrollable = elem.attrib.get("scrollable") == "true"
+                has_id = bool(elem.attrib.get("resource-id"))
+                has_desc = bool(elem.attrib.get("content-desc"))
+
+                is_interactive = clickable or focusable or long_clickable or scrollable or has_id or has_desc
+                if not is_interactive:
+                    continue
+
+                # Prefer labeling by parent context when available
+                parent_prefix = ""
+                if len(path) > 1:
+                    parent_prefix = get_id_from_element(path[-2])
+
+                elem_id = get_id_from_element(elem)
+                if parent_prefix:
+                    elem_id = parent_prefix + "_" + elem_id
+
+                # attribute tag for coloring in draw
+                attrib_tag = "clickable" if clickable else ("focusable" if focusable else ("scrollable" if scrollable else "long_clickable"))
+
+                elems.append(AndroidElement(elem_id, ((x1, y1), (x2, y2)), attrib_tag))
+            except Exception:
+                pass
+
+        elif event == 'end':
+            path.pop()
+
+    # De-duplicate by IoU to keep distinct tiles
+    def iou(a, b):
+        (ax1, ay1), (ax2, ay2) = a
+        (bx1, by1), (bx2, by2) = b
+        xL, yT = max(ax1, bx1), max(ay1, by1)
+        xR, yB = min(ax2, bx2), min(ay2, by2)
+        if xR <= xL or yB <= yT:
+            return 0.0
+        inter = (xR - xL) * (yB - yT)
+        areaA = (ax2 - ax1) * (ay2 - ay1)
+        areaB = (bx2 - bx1) * (by2 - by1)
+        return inter / max(areaA + areaB - inter, 1e-6)
+
+    merged = []
+    for e in elems:
+        keep = True
+        for m in merged:
+            if iou(m.bbox, e.bbox) > iou_thresh:
+                keep = False
+                break
+        if keep:
+            merged.append(e)
+    return merged
+
 
 class AndroidController:
     def __init__(self, device):
