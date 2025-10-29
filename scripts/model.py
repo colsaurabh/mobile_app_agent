@@ -132,28 +132,28 @@ class GeminiModel(BaseModel):
             prompt_tokens = usage.get("promptTokenCount", 0)
             completion_tokens = usage.get("candidatesTokenCount", 0)
             total_tokens = usage.get("totalTokenCount", 0)
-            print_with_color(f"Token usage (Gemini) - prompt: {prompt_tokens}, completion: {completion_tokens}, total: {total_tokens}", "yellow")
+            # print_with_color(f"Token usage (Gemini) - prompt: {prompt_tokens}, completion: {completion_tokens}, total: {total_tokens}", "yellow")
 
         return True, text if text else "``(No text in Gemini response)``"
 
 
 def parse_explore_rsp(rsp):
     try:
-        print_with_color(f"Original response: {rsp}", "yellow")
+        # print_with_color(f"Original response: {rsp}", "yellow")
         observation = re.findall(r"Observation: (.*?)$", rsp, re.MULTILINE)[0]
         think = re.findall(r"Thought: (.*?)$", rsp, re.MULTILINE)[0]
         act = re.findall(r"Action: (.*?)$", rsp, re.MULTILINE)[0]
         last_act = re.findall(r"Summary: (.*?)$", rsp, re.MULTILINE)[0]
-        print_with_color("Observation:", "yellow")
-        print_with_color(observation, "magenta")
-        print_with_color("Thought:", "yellow")
-        print_with_color(think, "magenta")
-        print_with_color("Action:", "yellow")
-        print_with_color(act, "magenta")
-        print_with_color("Summary:", "yellow")
-        print_with_color(last_act, "magenta")
+        readable = re.findall(r"ReadableSummarisation: (.*?)$", rsp, re.MULTILINE)[0]
+
+        print_with_color(f"Observation: => {observation}", "magenta")
+        print_with_color(f"Thought: => {think}", "magenta")
+        print_with_color(f"Action: => {act}", "magenta")
+        print_with_color(f"Summary: => {last_act}", "magenta")
+        print_with_color(f"ReadableSummarisation: => {readable}", "magenta")
+
         if configs.get("ENABLE_VOICE", False):
-            speak(last_act)
+            speak(readable)
         if "FINISH" in act:
             return ["FINISH"]
         act_name = act.split("(")[0]
@@ -217,16 +217,16 @@ def parse_grid_rsp(rsp):
         think = re.findall(r"Thought: (.*?)$", rsp, re.MULTILINE)[0]
         act = re.findall(r"Action: (.*?)$", rsp, re.MULTILINE)[0]
         last_act = re.findall(r"Summary: (.*?)$", rsp, re.MULTILINE)[0]
-        print_with_color("Observation:", "yellow")
-        print_with_color(observation, "magenta")
-        print_with_color("Thought:", "yellow")
-        print_with_color(think, "magenta")
-        print_with_color("Action:", "yellow")
-        print_with_color(act, "magenta")
-        print_with_color("Summary:", "yellow")
-        print_with_color(last_act, "magenta")
+        readable = re.findall(r"ReadableSummarisation: (.*?)$", rsp, re.MULTILINE)[0]
+
+        print_with_color(f"Observation: => {observation}", "magenta")
+        print_with_color(f"Thought: => {think}", "magenta")
+        print_with_color(f"Action: => {act}", "magenta")
+        print_with_color(f"Summary: => {last_act}", "magenta")
+        print_with_color(f"ReadableSummarisation: => {readable}", "magenta")
+
         if configs.get("ENABLE_VOICE", False):
-            speak(last_act)
+            speak(readable)
         if "FINISH" in act:
             return ["FINISH"]
         act_name = act.split("(")[0]

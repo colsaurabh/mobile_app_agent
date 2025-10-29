@@ -567,7 +567,7 @@ while round_count < configs["MAX_ROUNDS"]:
         elif act_name == "ask_human":
             # res = ["ask_human", question, last_act]
             _, question = res
-            print_with_color(f"Saurabh: ask_human question is as => {question}", "green")
+            # print_with_color(f"Saurabh: ask_human question is as => {question}", "green")
             try:
                 if configs.get("ENABLE_VOICE", False):
                     from utils import voice_ask
@@ -593,7 +593,7 @@ while round_count < configs["MAX_ROUNDS"]:
             #     break
 
             pending_human_input = answer
-            print_with_color(f'Saurabh: Captured input. Human input answer as => {pending_human_input}.', "yellow")
+            # print_with_color(f'Saurabh: Captured input. Human input answer as => {pending_human_input}.', "yellow")
             continue
 
         if act_name != "grid":

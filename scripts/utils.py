@@ -171,7 +171,7 @@ def voice_ask(prompt_text: str, api_key: str, model: str = "whisper-1", max_seco
             text = transcribe_with_openai(wav_path, api_key=api_key, model=model)
             cost_per_minute = 0.006
             usage_cost = (max_seconds / 60) * cost_per_minute
-            print_with_color(f"Estimated transcription cost: ${usage_cost:.6f}", "yellow")
+            # print_with_color(f"Estimated transcription cost: ${usage_cost:.6f}", "yellow")
             speak(text)
         finally:
             try:
