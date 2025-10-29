@@ -151,6 +151,9 @@ def transcribe_with_openai(wav_path: str, api_key: str, model: str = "whisper-1"
         files = {
             "file": (os.path.basename(wav_path), f, "audio/wav"),
             "model": (None, model),
+            "language": (None, "en"), # Force decoding for English
+            "translate": (None, "true"), # Translate non-English speech into English
+            "temperature": (None, "0"), # More deterministic
         }
         resp = requests.post(url, headers=headers, files=files, timeout=60)
     resp.raise_for_status()
@@ -160,6 +163,7 @@ def transcribe_with_openai(wav_path: str, api_key: str, model: str = "whisper-1"
 def voice_ask(prompt_text: str, api_key: str, model: str = "whisper-1", max_seconds: int = 15) -> str:
     # Speak prompt, record answer, transcribe; fallback to keyboard if empty/failed
     print_with_color(prompt_text, "blue")
+    # print_with_color("Activating voice agent", "blue")
     speak(prompt_text)
     try:
         wav_path = _record_wav_tmp(seconds=max_seconds)
@@ -175,7 +179,7 @@ def voice_ask(prompt_text: str, api_key: str, model: str = "whisper-1", max_seco
             except Exception:
                 pass
         if text:
-            print_with_color(f"(Heard) {text}", "cyan")
+            print_with_color(f"(Voice Response): {text}", "cyan")
             return text
     except Exception as e:
         print_with_color(f"Voice input failed: {e}", "red")

@@ -140,7 +140,7 @@ if configs.get("ENABLE_VOICE", False):
             "Please enter the description of the task you want me to complete:",
             api_key=configs["OPENAI_API_KEY"],
             model=whisper_model,
-            max_seconds=10
+            max_seconds=5
         )
     except Exception:
         print_with_color("Please enter the description of the task you want me to complete:", "blue")
@@ -260,11 +260,12 @@ while round_count < configs["MAX_ROUNDS"]:
             except Exception as e:
                 print_with_color(f"ERROR: Documentation fetching failed failed: {e}", "red")
                 ui_doc = ""
-            print_with_color(f"Documentations retrieved for the current interface:\n{ui_doc}", "magenta")
+            # print_with_color(f"Documentations retrieved for the current interface:\n{ui_doc}", "magenta")
             ui_doc = """
             You also have access to the following documentations that describes the functionalities of UI 
             elements you can interact on the screen. These docs are crucial for you to determine the target of your 
             next action. You should always prioritize these documented elements for interaction:""" + ui_doc
+            ui_doc = ""
             prompt = re.sub(r"<ui_document>", ui_doc, prompts.task_template)
 
     prompt = re.sub(r"<task_description>", task_desc, prompt)
@@ -319,7 +320,7 @@ while round_count < configs["MAX_ROUNDS"]:
                         "Please describe your next question or say quit or exit to leave",
                         api_key=configs["OPENAI_API_KEY"],
                         model=whisper_model,
-                        max_seconds=10
+                        max_seconds=5
                     )
                 except Exception:
                     print_with_color("Please enter the description of the task you want me to complete:", "blue")
@@ -338,6 +339,8 @@ while round_count < configs["MAX_ROUNDS"]:
         
         last_act = res[-1]
         res = res[:-1]
+
+        # print_with_color(f"Saurabh: Act name => {act_name}. Last act as => {last_act}", "red")
     
         if act_name == "tap":
             try:
@@ -375,12 +378,64 @@ while round_count < configs["MAX_ROUNDS"]:
                 if ret == "ERROR":
                     print_with_color("ERROR: text execution failed", "red")
                     continue
+
+                ret = controller.tap(width // 2, height // 10)
+                # Tapping to close the keyboard
+                if ret == "ERROR":
+                    print_with_color("ERROR: tap execution failed for keyboard dismissal", "red")
+                    continue
             except (ValueError, TypeError) as e:
                 print_with_color(f"ERROR: Invalid text parameters: {e}", "red")
                 continue
             except Exception as e:
                 print_with_color(f"ERROR: Unexpected error during text input: {e}", "red")
                 continue
+        # elif act_name == "text":
+        #     try:
+        #         print_with_color("ERROR: text execution failed", "red")
+        #         _, area, input_str = res
+        #         print_with_color(f"Saurabh: Area as => {area}. Input String as => {input_str}", "red")
+
+        #         if input_str.strip() == "<HUMAN_INPUT>":
+        #             try:
+        #                 input_str = pending_human_input
+        #                 if input_str is None:
+        #                     print_with_color('No stored input available. Ask first via ask_human("...").', "red")
+        #                     continue
+        #             except NameError:
+        #                 print_with_color('No stored input available. Ask first via ask_human("...").', "red")
+        #                 continue
+
+        #         if area < 1 or area > len(elem_list):
+        #             print_with_color(f"ERROR: Invalid area index {area}. Available areas: 1-{len(elem_list)}", "red")
+        #             continue
+        #         tl, br = elem_list[area - 1].bbox
+        #         x, y = (tl[0] + br[0]) // 2, (tl[1] + br[1]) // 2
+        #         ret = controller.tap(x, y)
+        #         if ret == "ERROR":
+        #             print_with_color("ERROR: tap execution failed from text", "red")
+        #             continue
+
+        #         print_with_color(f"Tapping element {area} to focus before typing.", "cyan")
+        #         try:
+        #             ret = controller.tap(x, y)
+        #             if ret == "ERROR":
+        #                 print_with_color("ERROR: Tapping failed before entering text", "red")
+        #                 continue
+        #             time.sleep(0.5)
+        #         except Exception as e:
+        #             print_with_color(f"ERROR: Tapping failed before entering text: {e}", "red")
+
+        #         ret = controller.text(input_str)
+        #         if ret == "ERROR":
+        #             print_with_color("ERROR: text execution failed", "red")
+        #             continue
+        #     except (ValueError, TypeError) as e:
+        #         print_with_color(f"ERROR: Invalid text parameters: {e}", "red")
+        #         continue
+        #     except Exception as e:
+        #         print_with_color(f"ERROR: Unexpected error during text input: {e}", "red")
+        #         continue
         elif act_name == "long_press":
             try:
                 _, area = res
@@ -415,9 +470,9 @@ while round_count < configs["MAX_ROUNDS"]:
                     print_with_color(f"ERROR: Invalid swipe direction '{swipe_dir}'. Must be up, down, left, or right", "red")
                     continue
                     
-                if not isinstance(dist, (int, float)) or dist <= 0:
-                    print_with_color(f"ERROR: Invalid swipe distance '{dist}'. Must be a positive number", "red")
-                    continue
+                # if not isinstance(dist, (int, float)) or dist <= 0:
+                #     print_with_color(f"ERROR: Invalid swipe distance '{dist}'. Must be a positive number", "red")
+                #     continue
                 
                 ret = controller.swipe(x, y, swipe_dir, dist)
                 if ret == "ERROR":
@@ -512,7 +567,7 @@ while round_count < configs["MAX_ROUNDS"]:
         elif act_name == "ask_human":
             # res = ["ask_human", question, last_act]
             _, question = res
-            print_with_color(f"Saurabh: ask_human question is as {question}", "green")
+            print_with_color(f"Saurabh: ask_human question is as => {question}", "green")
             try:
                 if configs.get("ENABLE_VOICE", False):
                     from utils import voice_ask
@@ -521,7 +576,7 @@ while round_count < configs["MAX_ROUNDS"]:
                         question,
                         api_key=configs["OPENAI_API_KEY"],
                         model=whisper_model,
-                        max_seconds=10
+                        max_seconds=5
                     )
                 else:
                     print_with_color(question, "blue")
@@ -538,7 +593,7 @@ while round_count < configs["MAX_ROUNDS"]:
             #     break
 
             pending_human_input = answer
-            print_with_color(f'Saurabh: Captured input. Human input as {pending_human_input}.', "yellow")
+            print_with_color(f'Saurabh: Captured input. Human input answer as => {pending_human_input}.', "yellow")
             continue
 
         if act_name != "grid":

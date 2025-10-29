@@ -206,7 +206,7 @@ def parse_explore_rsp(rsp):
             print_with_color(f"ERROR: Undefined act {act_name}!", "red")
             return ["ERROR"]
     except Exception as e:
-        print_with_color(f"ERROR: an exception occurs while parsing the model response: {e}", "red")
+        print_with_color(f"ERROR: an exception occurs while parsing the model response in parse_explore_rsp: {e}", "red")
         print_with_color(rsp, "red")
         return ["ERROR"]
 
@@ -257,7 +257,7 @@ def parse_grid_rsp(rsp):
             print_with_color(f"ERROR: Undefined act {act_name}!", "red")
             return ["ERROR"]
     except Exception as e:
-        print_with_color(f"ERROR: an exception occurs while parsing the model response: {e}", "red")
+        print_with_color(f"ERROR: an exception occurs while parsing the model response in parse_grid_rsp: {e}", "red")
         print_with_color(rsp, "red")
         return ["ERROR"]
 
