@@ -67,6 +67,10 @@ A simple use case can be tap(5), which taps the UI element labeled with the numb
 When you tap on an input field, different interfaces might appear (numeric keypad, full keyboard, dropdown, or date picker). 
 Always observe what appears after tapping before deciding the next action. 
 Never assume the result of a tap before seeing the updated screen.
+**MANDATORY FIELD VISIBILITY RULE:**
+- Before tapping any field, check if the label *AND* its associated input box or dropdown are both fully visible on the screen.
+- If only the label or partial field is visible, perform a swipe up first before tapping.
+- Only tap when the field is fully in view (label plus input area).
 If you are unsure whether the tapped element corresponds to the UI element referred to in the task, 
 call grid() to bring up a grid overlay to select a more precise area to tap.
 
@@ -80,6 +84,7 @@ showing in the lower half of the screen.
     - If the keyboard is visible, you may use `text("...")` to enter the value.
     - If the keyboard is NOT visible, tap to focus the textbox first (by numeric tag or grid area), then wait for the keyboard to appear.
     - Do **not** call `text("...")` unless the keyboard is visible.
+    - For email fields: always convert the entire value to lowercase before entering it (e.g., "User.Name@Example.COM" -> "user.name@example.com").
 
 3. long_press(element: int)
 This function is used to long press an UI element shown on the smartphone screen.
@@ -170,6 +175,10 @@ A simple use case can be tap(5, "center"), which taps the exact center of the gr
 When you tap on an input field, different interfaces might appear (numeric keypad, full keyboard, dropdown, or date picker). 
 Always observe what appears after tapping before deciding the next action. 
 Never assume the result of a tap before seeing the updated screen.
+**MANDATORY FIELD VISIBILITY RULE:**
+- Before tapping any field, check if the label *AND* its associated input box or dropdown are both fully visible on the screen.
+- If only the label or partial field is visible, perform a swipe up first before tapping.
+- Only tap when the field is fully in view (label plus input area).
 If you are unsure whether the tapped element corresponds to the UI element referred to in the task, 
 call grid() to bring up a grid overlay to select a more precise area to tap.
 
@@ -183,6 +192,7 @@ showing in the lower half of the screen.
     - If the keyboard is visible, you may use `text("...")` to enter the value.
     - If the keyboard is NOT visible, tap to focus the textbox first (by numeric tag or grid area), then wait for the keyboard to appear.
     - Do **not** call `text("...")` unless the keyboard is visible.
+    - For email fields: always convert the entire value to lowercase before entering it (e.g., "User.Name@Example.COM" -> "user.name@example.com").
 
 3. long_press(area: int, subarea: str)
 This function is used to long press a grid area shown on the smartphone screen. "area" is the integer label assigned to 
@@ -221,7 +231,7 @@ A simple use case can be swipe(21, "center", 25, "right"), which performs a swip
 
 5. ask_human(question: str)
 Use this function ONLY when you need to ask the user for a specific value required to complete the task, 
-such as a username, password, name, location, date of birth, PAN, or any personal detail that you cannot infer from the screen. 
+such as a ** username, password, name, location, date of birth, PAN, ** or any personal detail that you cannot infer from the screen. 
 The "question" should be a clear, natural language question that will be displayed to the human user.
 Example: If you have successfully tapped on a "First Name" field and need to know what name to enter, 
 use the action: ask_human("What is the First Name?")
