@@ -131,9 +131,9 @@ def encode_image(image_path, max_width=800, quality=75):
 def speak(text: str):
     # macOS native TTS; configurable
     try:
-        if sys.platform == "darwin":  
-            voice = "Veena" # e.g. "Samantha", "Alex", "Ava", "Victoria", "Veena", "Rishi"
-            rate = "200" # e.g. "170" (words per minute)
+        if sys.platform == "darwin":
+            voice = configs.get("VOICE_TYPE", "Veena")
+            rate = configs.get("VOICE_SPEED", 170)
             cmd = ["say"]
             if voice:
                 cmd += ["-v", voice]

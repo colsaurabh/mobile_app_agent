@@ -25,7 +25,10 @@ DOC_REFINE: false  # Set this to true will make the agent refine existing docume
 MAX_ROUNDS: 100  # Set the round limit for the agent to complete the task
 DARK_MODE: false  # Set this to true if your app is in dark mode to enhance the element labeling
 MIN_DIST: 10  # The minimum distance between elements to prevent overlapping during the labeling process
-GRID_SIZE: 80 # 40 being a good grid size
+GRID_SIZE: 35 # 40 being a good grid size
 
-ENABLE_VOICE: false
+ENABLE_VOICE: true
+VOICE_TYPE: "Veena" # e.g. "Samantha", "Alex", "Ava", "Victoria", "Veena", "Rishi"
+VOICE_SPEED: 185 # e.g. "170" (words per minute)
+
 ALWAYS_GRID: true
