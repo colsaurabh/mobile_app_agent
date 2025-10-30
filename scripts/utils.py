@@ -127,10 +127,18 @@ def encode_image(image_path, max_width=800, quality=75):
 
 
 def speak(text: str):
-    # macOS native TTS; no-op fallback on other OSes
+    # macOS native TTS; configurable
     try:
-        if sys.platform == "darwin":
-            subprocess.run(["say", text], check=False)
+        if sys.platform == "darwin":  
+            voice = "Veena" # e.g. "Samantha", "Alex", "Ava", "Victoria", "Veena", "Rishi"
+            rate = "200" # e.g. "170" (words per minute)
+            cmd = ["say"]
+            if voice:
+                cmd += ["-v", voice]
+            if rate:
+                cmd += ["-r", rate]
+            cmd += [text]
+            subprocess.run(cmd, check=False)
     except Exception:
         pass
 

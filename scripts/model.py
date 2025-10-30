@@ -148,7 +148,7 @@ def parse_explore_rsp(rsp):
 
         print_with_color(f"Observation: => {observation}", "magenta")
         print_with_color(f"Thought: => {think}", "magenta")
-        print_with_color(f"Action: => {act}", "magenta")
+        print_with_color(f"Action: => {act}", "green")
         print_with_color(f"Summary: => {last_act}", "magenta")
         print_with_color(f"ReadableSummarisation: => {readable}", "magenta")
 
@@ -221,7 +221,7 @@ def parse_grid_rsp(rsp):
 
         print_with_color(f"Observation: => {observation}", "magenta")
         print_with_color(f"Thought: => {think}", "magenta")
-        print_with_color(f"Action: => {act}", "magenta")
+        print_with_color(f"Action: => {act}", "green")
         print_with_color(f"Summary: => {last_act}", "magenta")
         print_with_color(f"ReadableSummarisation: => {readable}", "magenta")
 

@@ -184,6 +184,10 @@ def area_to_xy(area, subarea):
     return x, y
 
 pending_human_input = None
+pending_question = None
+
+# This variable will hold the user's answer from the previous round
+human_answer_context = ""
 
 while round_count < configs["MAX_ROUNDS"]:
     round_count += 1
@@ -198,11 +202,10 @@ while round_count < configs["MAX_ROUNDS"]:
         print_with_color(f"ERROR: Screenshot or XML generation failed: {e}", "red")
         sys.exit(1)
 
-    # This variable will hold the user's answer from the previous round
-    human_answer_context = ""
     if pending_human_input:
-        human_answer_context = f"You previously asked a question and the human responded with: '{pending_human_input}'. Use this information for your next action."
+        human_answer_context = f"You previously asked a question {pending_question} and the human responded with: '{pending_human_input}'. Use this information for your next action."
         pending_human_input = None
+        pending_question = None
 
     if grid_on:
         rows, cols = draw_grid(screenshot_path, os.path.join(task_dir, f"{dir_name}_{round_count}_grid.png"))
@@ -335,7 +338,7 @@ while round_count < configs["MAX_ROUNDS"]:
             last_act = "None"
             continue
         if act_name == "ERROR":
-            break
+            continue
         
         last_act = res[-1]
         res = res[:-1]
@@ -361,6 +364,7 @@ while round_count < configs["MAX_ROUNDS"]:
                 print_with_color(f"ERROR: Unexpected error during tap: {e}", "red")
                 continue
         elif act_name == "text":
+            # Saurabh: Check this code
             try:
                 _, input_str = res
                 
@@ -593,6 +597,7 @@ while round_count < configs["MAX_ROUNDS"]:
             #     break
 
             pending_human_input = answer
+            pending_question = question
             # print_with_color(f'Saurabh: Captured input. Human input answer as => {pending_human_input}.', "yellow")
             continue
 

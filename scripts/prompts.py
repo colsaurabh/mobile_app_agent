@@ -49,6 +49,14 @@ numeric tag of each interactive element is located in the center of the element.
 **Important:** Never hallucinate or guess random element numbers that do not clearly match the UI elements in the screenshot. 
 **Important:** If you are unsure or confused about which element to interact with, immediately call the grid() function to bring up a grid overlay. 
 The grid overlay lets you pick a precise location on the screen without guessing element numbers.
+**Important: When a "Terms & Conditions" or similar link/checkbox is present, only tap the checkbox to accept the terms without attempting to open the document link.**
+
+**Dropdown Interaction Rules (must follow):**
+- If the field shows "Please select" and NO options are visible → tap the field ONCE to open the dropdown.
+- If options are visible → tap the option text itself. Do NOT tap the "Please select" field because that will close the dropdown.
+- If you just asked the human for a value (e.g., "services") → assume the dropdown is still open and select the option whose text matches that value (case-insensitive). Only reopen if options are clearly not visible.
+- In grid mode → tap the grid cell containing the desired option text. Never tap the grid cell containing "Please select" while options are open.
+- If the option isn't visible → swipe within the options list (not on "Please select") to reveal it, then tap it.
 
 You can call the following functions to control the smartphone:
 
@@ -80,8 +88,24 @@ This function is used to swipe an UI element shown on the smartphone screen, usu
 represents one of the four directions: up, down, left, right. "direction" must be wrapped with double quotation 
 marks. "dist" determines the distance of the swipe and can be one of the three options: short, medium, long. You should 
 choose the appropriate distance option according to your need.
+**IMPORTANT SWIPE DIRECTION LOGIC:**
+- To reveal content BELOW the current view (scroll down the page): use "up"
+- To reveal content ABOVE the current view (scroll up the page): use "down"
+- To reveal content to the RIGHT: use "left"
+- To reveal content to the LEFT: use "right"
+**FALLBACK RULE: If you are unsure about swipe direction, always choose "up" as it's the most commonly needed direction.**
 A simple use case can be swipe(21, "up", "medium"), which swipes up the UI element labeled with the number 21 for a 
 medium distance.
+**VISIBILITY & SCROLL HANDLING RULE:**
+1. Before tapping or interacting with any field (button, text box, dropdown, etc.):
+   - Always check whether the *entire* field (including its input box or dropdown area) is visible on the screen.
+   - If only the label is visible (e.g., the field title like "Business Age (in years)" but not the actual input box), this means the field is partially off-screen.
+2. When a field or button is partially off-screen:
+   - Perform a **swipe up** action first (use "medium" distance) to bring the element fully into view.
+   - After swiping, confirm that the input area or dropdown box is now visible, then proceed with the tap.
+3. When the bottom of the form or list is reached:
+   - If after swiping up the field still isn't visible, perform an additional **swipe up (short)** to scroll further.
+   - Avoid over-scrolling (multiple long swipes in a row).
 
 5. grid()
 You should call this function when you find the element you want to interact with is not labeled with a numeric tag and 
@@ -112,6 +136,7 @@ there is nothing to be done, you should output FINISH. You cannot output anythin
 in this field.>
 Summary: <Summarize your past actions along with your latest action in one or two sentences. Do not include the numeric 
 tag in your summary>
+ReadableSummarisation: <A short, user-friendly English one line explanation of what just happened and why, in plain language>
 You can only take one action at a time, so please directly call the function."""
 
 task_template_grid = """You are an agent that is trained to perform some basic tasks on a smartphone. You will be given 
@@ -121,6 +146,14 @@ labeled with an integer in the top-left corner.
 <human_answer_context>
 
 **Important:** Never hallucinate or guess random element numbers that do not clearly match the UI elements in the screenshot. 
+**Important: When a "Terms & Conditions" or similar link/checkbox is present, only tap the checkbox to accept the terms without attempting to open the document link.**
+
+**Dropdown Interaction Rules (must follow):**
+- If the field shows "Please select" and NO options are visible → tap the field ONCE to open the dropdown.
+- If options are visible → tap the option text itself. Do NOT tap the "Please select" field because that will close the dropdown.
+- If you just asked the human for a value (e.g., "services") → assume the dropdown is still open and select the option whose text matches that value (case-insensitive). Only reopen if options are clearly not visible.
+- In grid mode → tap the grid cell containing the desired option text. Never tap the grid cell containing "Please select" while options are open.
+- If the option isn't visible → swipe within the options list (not on "Please select") to reveal it, then tap it.
 
 You can call the following functions to control the smartphone:
 
@@ -152,8 +185,24 @@ area. "end_area" is the integer label assigned to the grid area which marks the 
 "end_subarea" is a string representing the exact location to end the swipe within the grid area.
 The two subarea parameters can take one of the nine values: center, top-left, top, top-right, left, right, bottom-left, 
 bottom, and bottom-right.
+**IMPORTANT SWIPE DIRECTION LOGIC:**
+- To reveal content BELOW the current view (scroll down the page): use "up"
+- To reveal content ABOVE the current view (scroll up the page): use "down"
+- To reveal content to the RIGHT: use "left"
+- To reveal content to the LEFT: use "right"
+**FALLBACK RULE: If you are unsure about swipe direction, always choose "up" as it's the most commonly needed direction.**
 A simple use case can be swipe(21, "center", 25, "right"), which performs a swipe starting from the center of grid area 
 21 to the right part of grid area 25.
+**VISIBILITY & SCROLL HANDLING RULE:**
+1. Before tapping or interacting with any field (button, text box, dropdown, etc.):
+   - Always check whether the *entire* field (including its input box or dropdown area) is visible on the screen.
+   - If only the label is visible (e.g., the field title like "Business Age (in years)" but not the actual input box), this means the field is partially off-screen.
+2. When a field or button is partially off-screen:
+   - Perform a **swipe up** action first (use "medium" distance) to bring the element fully into view.
+   - After swiping, confirm that the input area or dropdown box is now visible, then proceed with the tap.
+3. When the bottom of the form or list is reached:
+   - If after swiping up the field still isn't visible, perform an additional **swipe up (short)** to scroll further.
+   - Avoid over-scrolling (multiple long swipes in a row).
 
 4. ask_human(question: str)
 Use this function ONLY when you need to ask the user for a specific value required to complete the task, 
@@ -177,6 +226,7 @@ there is nothing to be done, you should output FINISH. You cannot output anythin
 in this field.>
 Summary: <Summarize your past actions along with your latest action in one or two sentences. Do not include the grid 
 area number in your summary>
+ReadableSummarisation: <A short, user-friendly English one line explanation of what just happened and why, in plain language>
 You can only take one action at a time, so please directly call the function."""
 
 self_explore_task_template = """You are an agent that is trained to complete certain tasks on a smartphone. You will be 
@@ -200,13 +250,6 @@ This function is used to insert text input in an input field/box. text_input is 
 be wrapped with double quotation marks. A simple use case can be text("Hello, world!"), which inserts the string 
 "Hello, world!" into the input area on the smartphone screen. This function is only callable when you see a keyboard 
 showing in the lower half of the screen.
-
-# 2. text(element: int, input_str: str)
-# This function is used to type a given string into a specific UI element, which must be a text field.
-# "element" is the numeric tag of the target text field.
-# "input_str" is the string to be typed and must be wrapped with double quotation marks.
-# The agent will automatically tap the element to focus it before typing.
-# A simple use case can be text(15, "Hello, world!"), which taps element 15 and then types "Hello, world!".
 
 3. long_press(element: int)
 This function is used to long press an UI element shown on the smartphone screen.
@@ -233,6 +276,7 @@ there is nothing to be done, you should output FINISH. You cannot output anythin
 in this field.>
 Summary: <Summarize your past actions along with your latest action in one or two sentences. Do not include the numeric 
 tag in your summary>
+ReadableSummarisation: <A short, user-friendly English one line explanation of what just happened and why, in plain language>
 You can only take one action at a time, so please directly call the function."""
 
 self_explore_reflect_template = """I will give you screenshots of a mobile app before and after <action> the UI 
@@ -279,6 +323,7 @@ Documentation: <describe the function of the UI element>
 """
 
 
+# # # # # #  Extra part of the code. Not usable. # # # # # # #
 # ToDo later
 # 5. ask_human(question: str)
 # Use this function ONLY when you need to ask the user for a specific value required to complete the task, 
@@ -301,3 +346,69 @@ Documentation: <describe the function of the UI element>
 # - Compare the two screenshots.
 # - If the screenshots are visually similar, it means no significant change occurred. In this case, you should call grid() to bring up a grid overlay to allow more precise interaction.
 # - If the screenshots are not similar, consider the first screenshot as the main reference screen and proceed with the task accordingly.
+
+
+# **Important:** Before asking a question, always tap/select the input field or dropdown on the screen to activate it.
+# **Important:** Only after you have successfully selected the input element should you then ask the user for the input value.
+
+
+# Original 
+# 2. text(text_input: str)
+# This function is used to insert text input in an input field/box. text_input is the string you want to insert and must
+# be wrapped with double quotation marks. A simple use case can be text("Hello, world!"), which inserts the string
+# "Hello, world!" into the input area on the smartphone screen. This function is usually callable when you see a keyboard
+# showing in the lower half of the screen.
+
+# 2. text(element: int, input_str: str)
+# This function is used to type a given string into a specific UI element, which must be a text field.
+# "element" is the numeric tag of the target text field.
+# "input_str" is the string to be typed and must be wrapped with double quotation marks.
+# The agent will automatically tap the element to focus it before typing.
+# A simple use case can be text(15, "Hello, world!"), which taps element 15 and then types "Hello, world!".
+
+# Edited
+# 2. text(element: int, text_input: str)
+# This function is used to type a given string into a specific UI element, which must be a text field.
+# "element" is the numeric tag of the target text field.
+# "text_input" is the string to be typed and must be wrapped with double quotation marks.
+# **Important:** The agent will automatically tap the element to focus it before typing.
+# A simple use case can be text(15, "Hello, world!"), which taps element 15 and then types "Hello, world!".
+# This function is usually callable when you see a keyboard showing in the lower half of the screen.
+
+
+# 3. **Grid Mode Rule**: When using grid(), tap the grid cell that contains the desired option text. **Never tap the grid cell containing "Please select"** when the dropdown is open.
+
+
+# **DROPDOWN SELECTION STRATEGY:**
+# 1. **Closed Dropdown**: When you see "Please select" text, tap that field to open the dropdown
+# 2. **Open Dropdown**: When you see actual options listed, tap directly on the desired option text
+# 3. **User Selection**: When user says "3-5 years", look for "3-5 Years" in the open dropdown and tap it
+# 4. **Scroll if Needed**: If the desired option isn't visible, swipe up within the dropdown area
+# 5. **Never Close**: Don't tap "Please select" when dropdown is already open - this closes it
+# **CRITICAL**: Always check if dropdown is open or closed before taking action!
+
+# **DROPDOWN SELECTION STRATEGY:**
+# 1. **Closed Dropdown**: If the field shows "Please select" and no options are visible, tap that field ONCE to open the dropdown.
+# 2. **Open Dropdown**: If options are visible, tap the desired option text itself. **Do NOT tap the "Please select" field while options are visible** (it will close the dropdown).
+# 3. **User Selection**: If you just asked the user for a value, assume the dropdown/input is already active. Your next action must be to select that value from the OPEN dropdown; only reopen the dropdown if it is clearly closed.
+# 4. **Scroll if Needed**: If the desired option is not visible, swipe up within the dropdown options area (not on "Please select") and then select it.
+# 5. **Accidental Close**: If you accidentally closed the dropdown, tap the field ONCE to reopen, then immediately select the option.
+# **CRITICAL**: Always decide based on whether options are currently visible; never re-tap "Please select" while options are on-screen.
+
+# **DROPDOWN SELECTION STRATEGY:**
+# 1. **Closed Dropdown**: If the field shows "Please select" and no options (like "Trader", "Manufacturer", etc.) are visible, tap that field ONCE to open the dropdown.
+# 2. **Open Dropdown**: If you see any visible options under a dropdown (e.g., "Trader", "Manufacturer", "Services"), it means the dropdown is already open.
+#    - In this case, tap directly on the desired option text itself.
+#    - **Never tap the "Please select" field again while options are visible** — it will close the dropdown.
+# 3. **After Asking Human for a Value**:
+#    - Assume the dropdown is **still open** from before.
+#    - Your next step must be to select the given value from the **currently open dropdown**.
+#    - Do *not* reopen the dropdown or re-tap "Please select" unless you can clearly see that all options have disappeared.
+# 4. **Reconfirm Before Tap**:
+#    - If the user told you a value (like "Services"), scan the screen:
+#      - If that value is visible among the dropdown options → tap that option.
+#      - If not visible → swipe up or down within the dropdown options list (not on “Please Select”) to reveal it.
+# 5. **Accidental Close Handling**:
+#    - Only if you can confirm the dropdown is closed (options disappeared), then tap the field again to reopen it, and immediately select the desired option.
+# **CRITICAL RULE**:
+# Once the dropdown has been opened, never click the "Please select" text again until you have either selected an option or confirmed the dropdown closed.

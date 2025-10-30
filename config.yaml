@@ -2,29 +2,27 @@
 REASONING_MODEL: "Gemini"
 DOCUMENT_GENERATION_MODEL: "Gemini"
 
+OPENAI_API_KEY: ""
+GEMINI_API_KEY: ""
+
 OPENAI_API_BASE: "https://api.openai.com/v1/chat/completions"
-OPENAI_API_KEY: "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"  # Set the value to sk-xxx if you host the openai interface for open llm model
 OPENAI_API_MODEL: "gpt-5"
-MAX_COMPLETION_TOKENS: 3000
-TEMPERATURE: 1
-REQUEST_INTERVAL: 1  # Time in seconds between consecutive GPT requests
 
 OPENAI_API_WHISPER_URL: "https://api.openai.com/v1/audio/transcriptions"
 OPENAI_WHISPER_MODEL: "whisper-1"
 
 GEMINI_API_BASE: "https://generativelanguage.googleapis.com"
-GEMINI_API_KEY: "AIzaSyA3WC_HJoW9OFHduA7Wqmhg_D89iOwd1SU"
-GEMINI_API_MODEL: "gemini-2.5-flash"
-# GEMINI_API_MODEL: "gemini-2.5-pro"
+GEMINI_API_MODEL: "gemini-2.5-flash" # gemini-2.5-pro
+
 MAX_COMPLETION_TOKENS: 3000
 TEMPERATURE: 1
-REQUEST_INTERVAL: 5  # Time in seconds between consecutive Gemini requests
+REQUEST_INTERVAL: 5  # Time in seconds between consecutive LLM requests
 
 ANDROID_SCREENSHOT_DIR: "/sdcard"  # Set the directory on your Android device to store the intermediate screenshots. Make sure the directory EXISTS on your phone!
 ANDROID_XML_DIR: "/sdcard"  # Set the directory on your Android device to store the intermediate XML files used for determining locations of UI elements on your screen. Make sure the directory EXISTS on your phone!
 
 DOC_REFINE: false  # Set this to true will make the agent refine existing documentation based on the latest demonstration; otherwise, the agent will not regenerate a new documentation for elements with the same resource ID.
-MAX_ROUNDS: 50  # Set the round limit for the agent to complete the task
+MAX_ROUNDS: 100  # Set the round limit for the agent to complete the task
 DARK_MODE: false  # Set this to true if your app is in dark mode to enhance the element labeling
 MIN_DIST: 10  # The minimum distance between elements to prevent overlapping during the labeling process
 
