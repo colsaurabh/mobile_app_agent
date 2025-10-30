@@ -12,7 +12,7 @@ from config import load_config
 from and_controller import list_all_devices, AndroidController
 from utils import traverse_tree
 from model import parse_explore_rsp, parse_grid_rsp, OpenAIModel, GeminiModel
-from utils import print_with_color, draw_bbox_multi, draw_grid
+from utils import print_with_color, draw_bbox_multi, draw_grid, calculate_image_similarity
 
 arg_desc = "AppAgent Executor"
 parser = argparse.ArgumentParser(formatter_class=argparse.RawDescriptionHelpFormatter, description=arg_desc)
@@ -187,6 +187,9 @@ pending_question = None
 # This variable will hold the user's answer from the previous round
 human_answer_context = ""
 
+previous_screenshot_path = None
+current_screenshot_path = None
+
 while round_count < configs["MAX_ROUNDS"]:
     round_count += 1
     print_with_color(f"Round {round_count}", "yellow")
@@ -233,7 +236,6 @@ while round_count < configs["MAX_ROUNDS"]:
                         dark_mode=configs["DARK_MODE"])
         image = os.path.join(task_dir, f"{dir_name}_{round_count}_labeled.png")
 
-
         if no_doc:
             prompt = re.sub(r"<ui_document>", "", prompts.task_template)
         else:
@@ -268,6 +270,14 @@ while round_count < configs["MAX_ROUNDS"]:
             next action. You should always prioritize these documented elements for interaction:""" + ui_doc
             ui_doc = ""
             prompt = re.sub(r"<ui_document>", ui_doc, prompts.task_template)
+
+    # current_screenshot_path = image
+    # similarity_score = calculate_image_similarity(previous_screenshot_path, current_screenshot_path)
+    # previous_screenshot_path = current_screenshot_path
+    # if similarity_score < 0.9:
+    #     print_with_color(f"Similarity score is {(similarity_score * 100):.2f}%", "green")
+    # else:
+    #     print_with_color(f"Similarity score is {(similarity_score * 100):.2f}%", "red")
 
     prompt = re.sub(r"<task_description>", task_desc, prompt)
     prompt = re.sub(r"<last_act>", last_act, prompt)

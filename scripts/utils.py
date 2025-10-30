@@ -17,6 +17,9 @@ import sys
 import sounddevice as sd
 import soundfile as sf
 
+from skimage.metrics import structural_similarity as ssim
+import numpy as np
+
 from config import load_config
 configs = load_config()
 
@@ -46,40 +49,6 @@ def print_with_color(text: str, color=""):
     else:
         print(text)
     print(Style.RESET_ALL)
-
-
-def draw_bbox_multi(img_path, output_path, elem_list, record_mode=False, dark_mode=False):
-    imgcv = cv2.imread(img_path)
-    count = 1
-    for elem in elem_list:
-        try:
-            top_left = elem.bbox[0]
-            bottom_right = elem.bbox[1]
-            left, top = top_left[0], top_left[1]
-            right, bottom = bottom_right[0], bottom_right[1]
-            label = str(count)
-            if record_mode:
-                if elem.attrib == "clickable":
-                    color = (250, 0, 0)
-                elif elem.attrib == "focusable":
-                    color = (0, 0, 250)
-                else:
-                    color = (0, 250, 0)
-                imgcv = ps.putBText(imgcv, label, text_offset_x=(left + right) // 2 + 10, text_offset_y=(top + bottom) // 2 + 10,
-                                    vspace=10, hspace=10, font_scale=1, thickness=2, background_RGB=color,
-                                    text_RGB=(255, 250, 250), alpha=0.5)
-            else:
-                text_color = (10, 10, 10) if dark_mode else (255, 250, 250)
-                bg_color = (255, 250, 250) if dark_mode else (10, 10, 10)
-                imgcv = ps.putBText(imgcv, label, text_offset_x=(left + right) // 2 + 10, text_offset_y=(top + bottom) // 2 + 10,
-                                    vspace=10, hspace=10, font_scale=1, thickness=2, background_RGB=bg_color,
-                                    text_RGB=text_color, alpha=0.5)
-        except Exception as e:
-            print_with_color(f"ERROR: An exception occurs while labeling the image\n{e}", "red")
-        count += 1
-    cv2.imwrite(output_path, imgcv)
-    return imgcv
-
 
 def draw_grid(img_path, output_path, rows=None, cols=None, min_cell_px=40):
     """
@@ -141,6 +110,48 @@ def encode_image(image_path, max_width=800, quality=75):
     except Exception as e:
         print_with_color(f"ERROR in encode_image: {e}", "red")
         return ""
+
+def calculate_image_similarity(img_path1, img_path2):
+    def load_image_as_gray(image_path, max_width=800):
+        if not image_path:
+            return None
+        try:
+            with Image.open(image_path) as img:
+                if img.width > max_width:
+                    ratio = max_width / float(img.width)
+                    new_height = int(float(img.height) * ratio)
+                    img = img.resize((max_width, new_height), Image.Resampling.LANCZOS)
+                img_gray = img.convert("L")
+                return np.array(img_gray)
+        except Exception as e:
+            print_with_color(f"ERROR loading image {image_path}: {e}", "red")
+            return None
+
+    try:
+        img1 = load_image_as_gray(img_path1)
+        img2 = load_image_as_gray(img_path2)
+
+        # Handle empty or missing images
+        if img1 is None and img2 is None:
+            return 1.0  # Both missing, consider identical
+        if img1 is None or img2 is None:
+            return 0.0  # One missing, dissimilar
+
+        # Resize for dimension compatibility
+        min_height = min(img1.shape[0], img2.shape[0])
+        min_width = min(img1.shape[1], img2.shape[1])
+        _resample = getattr(getattr(Image, "Resampling", Image), "LANCZOS", Image.LANCZOS if hasattr(Image, "LANCZOS") else Image.BICUBIC)
+        img1_resized = Image.fromarray(img1).resize((min_width, min_height), _resample)
+        img2_resized = Image.fromarray(img2).resize((min_width, min_height), _resample)
+
+        img1_array = np.array(img1_resized)
+        img2_array = np.array(img2_resized)
+
+        score, _ = ssim(img1_array, img2_array, full=True)
+        return score
+    except Exception as e:
+        print_with_color(f"ERROR computing similarity: {e}", "red")
+        return 0.0
 
 def get_id_from_element(elem):
     bounds = elem.attrib["bounds"][1:-1].split("][")
@@ -261,6 +272,38 @@ def collect_interactive_elements(xml_path, min_area=2000, iou_thresh=0.6):
         if keep:
             merged.append(e)
     return merged
+
+def draw_bbox_multi(img_path, output_path, elem_list, record_mode=False, dark_mode=False):
+    imgcv = cv2.imread(img_path)
+    count = 1
+    for elem in elem_list:
+        try:
+            top_left = elem.bbox[0]
+            bottom_right = elem.bbox[1]
+            left, top = top_left[0], top_left[1]
+            right, bottom = bottom_right[0], bottom_right[1]
+            label = str(count)
+            if record_mode:
+                if elem.attrib == "clickable":
+                    color = (250, 0, 0)
+                elif elem.attrib == "focusable":
+                    color = (0, 0, 250)
+                else:
+                    color = (0, 250, 0)
+                imgcv = ps.putBText(imgcv, label, text_offset_x=(left + right) // 2 + 10, text_offset_y=(top + bottom) // 2 + 10,
+                                    vspace=10, hspace=10, font_scale=1, thickness=2, background_RGB=color,
+                                    text_RGB=(255, 250, 250), alpha=0.5)
+            else:
+                text_color = (10, 10, 10) if dark_mode else (255, 250, 250)
+                bg_color = (255, 250, 250) if dark_mode else (10, 10, 10)
+                imgcv = ps.putBText(imgcv, label, text_offset_x=(left + right) // 2 + 10, text_offset_y=(top + bottom) // 2 + 10,
+                                    vspace=10, hspace=10, font_scale=1, thickness=2, background_RGB=bg_color,
+                                    text_RGB=text_color, alpha=0.5)
+        except Exception as e:
+            print_with_color(f"ERROR: An exception occurs while labeling the image\n{e}", "red")
+        count += 1
+    cv2.imwrite(output_path, imgcv)
+    return imgcv
 
 def speak(text: str):
     # macOS native TTS; configurable
