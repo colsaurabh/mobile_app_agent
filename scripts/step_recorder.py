@@ -7,7 +7,8 @@ import shutil
 import sys
 import time
 
-from and_controller import list_all_devices, AndroidController, traverse_tree
+from and_controller import list_all_devices, AndroidController
+from utils import traverse_tree
 from config import load_config
 from utils import print_with_color, draw_bbox_multi
 

@@ -9,7 +9,8 @@ import time
 
 import prompts
 from config import load_config
-from and_controller import list_all_devices, AndroidController, traverse_tree
+from and_controller import list_all_devices, AndroidController
+from utils import traverse_tree
 from model import parse_explore_rsp, parse_grid_rsp, OpenAIModel, GeminiModel
 from utils import print_with_color, draw_bbox_multi, draw_grid
 

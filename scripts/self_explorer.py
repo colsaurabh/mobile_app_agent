@@ -185,7 +185,7 @@ while round_count < configs["MAX_ROUNDS"]:
     # xml_path = controller.get_xml(f"{dir_name}_{round_count}", task_dir)
     if screenshot_before == "ERROR" or xml_path == "ERROR":
         break
-    from and_controller import collect_interactive_elements
+    from utils import collect_interactive_elements
     elem_list = []
     elem_list = collect_interactive_elements(xml_path, min_area=2000, iou_thresh=0.6)
     print_with_color(f"Detected {len(elem_list)} interactive elements", "green")
