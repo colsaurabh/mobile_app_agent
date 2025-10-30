@@ -135,11 +135,8 @@ except Exception as e:
 if configs.get("ENABLE_VOICE", False):
     from utils import voice_ask
     try:
-        whisper_model = configs.get("OPENAI_WHISPER_MODEL", "whisper-1")
         task_desc = voice_ask(
             "Please enter the description of the task you want me to complete:",
-            api_key=configs["OPENAI_API_KEY"],
-            model=whisper_model,
             max_seconds=5
         )
     except Exception:
@@ -318,11 +315,8 @@ while round_count < configs["MAX_ROUNDS"]:
             if configs.get("ENABLE_VOICE", False):
                 from utils import voice_ask
                 try:
-                    whisper_model = configs.get("OPENAI_WHISPER_MODEL", "whisper-1")
                     task_desc = voice_ask(
                         "Please describe your next question or say quit or exit to leave",
-                        api_key=configs["OPENAI_API_KEY"],
-                        model=whisper_model,
                         max_seconds=5
                     )
                 except Exception:
@@ -575,12 +569,9 @@ while round_count < configs["MAX_ROUNDS"]:
             try:
                 if configs.get("ENABLE_VOICE", False):
                     from utils import voice_ask
-                    whisper_model = configs.get("OPENAI_WHISPER_MODEL", "whisper-1")
                     answer = voice_ask(
                         question,
-                        api_key=configs["OPENAI_API_KEY"],
-                        model=whisper_model,
-                        max_seconds=5
+                        max_seconds=3
                     )
                 else:
                     print_with_color(question, "blue")

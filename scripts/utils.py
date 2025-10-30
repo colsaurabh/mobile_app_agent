@@ -16,8 +16,8 @@ import sys
 import sounddevice as sd
 import soundfile as sf
 
-# from config import load_config
-# configs = load_config()
+from config import load_config
+configs = load_config()
 
 def print_with_color(text: str, color=""):
     if color == "red":
@@ -82,6 +82,8 @@ def draw_grid(img_path, output_path, rows=None, cols=None, min_cell_px=40):
     """
     def clamp(n, lo, hi):
         return max(lo, min(hi, n))
+
+    min_cell_px = configs.get("GRID_SIZE", 40)
 
     image = cv2.imread(img_path)
     height, width, _ = image.shape
@@ -151,9 +153,10 @@ def _record_wav_tmp(seconds=12, samplerate=16000, channels=1):
     sf.write(path, audio, samplerate)
     return path
 
-def transcribe_with_openai(wav_path: str, api_key: str, model: str = "whisper-1"):
-    # url = configs.get("OPENAI_API_WHISPER_URL", "https://api.openai.com/v1/audio/transcriptions")
-    url = "https://api.openai.com/v1/audio/transcriptions"
+def transcribe_with_openai(wav_path: str):
+    url = configs.get("OPENAI_API_WHISPER_URL", "https://api.openai.com/v1/audio/transcriptions")
+    model = configs.get("OPENAI_WHISPER_MODEL", "whisper-1")
+    api_key = configs.get("OPENAI_API_KEY", "")
     headers = {"Authorization": f"Bearer {api_key}"}
     with open(wav_path, "rb") as f:
         files = {
@@ -168,7 +171,7 @@ def transcribe_with_openai(wav_path: str, api_key: str, model: str = "whisper-1"
     data = resp.json()
     return data.get("text", "").strip()
 
-def voice_ask(prompt_text: str, api_key: str, model: str = "whisper-1", max_seconds: int = 15) -> str:
+def voice_ask(prompt_text: str, max_seconds: int = 15) -> str:
     # Speak prompt, record answer, transcribe; fallback to keyboard if empty/failed
     print_with_color(prompt_text, "blue")
     # print_with_color("Activating voice agent", "blue")
@@ -176,7 +179,7 @@ def voice_ask(prompt_text: str, api_key: str, model: str = "whisper-1", max_seco
     try:
         wav_path = _record_wav_tmp(seconds=max_seconds)
         try:
-            text = transcribe_with_openai(wav_path, api_key=api_key, model=model)
+            text = transcribe_with_openai(wav_path)
             cost_per_minute = 0.006
             usage_cost = (max_seconds / 60) * cost_per_minute
             # print_with_color(f"Estimated transcription cost: ${usage_cost:.6f}", "yellow")

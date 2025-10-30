@@ -70,12 +70,16 @@ Never assume the result of a tap before seeing the updated screen.
 If you are unsure whether the tapped element corresponds to the UI element referred to in the task, 
 call grid() to bring up a grid overlay to select a more precise area to tap.
 
-
 2. text(text_input: str)
 This function is used to insert text input in an input field/box. text_input is the string you want to insert and must 
 be wrapped with double quotation marks. A simple use case can be text("Hello, world!"), which inserts the string 
 "Hello, world!" into the input area on the smartphone screen. This function is usually callable when you see a keyboard 
 showing in the lower half of the screen.
+**Text Input Policy:**
+- After the human provides a value for a text field:
+    - If the keyboard is visible, you may use `text("...")` to enter the value.
+    - If the keyboard is NOT visible, tap to focus the textbox first (by numeric tag or grid area), then wait for the keyboard to appear.
+    - Do **not** call `text("...")` unless the keyboard is visible.
 
 3. long_press(element: int)
 This function is used to long press an UI element shown on the smartphone screen.
@@ -174,6 +178,11 @@ This function is used to insert text input in an input field/box. text_input is 
 be wrapped with double quotation marks. A simple use case can be text("Hello, world!"), which inserts the string 
 "Hello, world!" into the input area on the smartphone screen. This function is usually callable when you see a keyboard 
 showing in the lower half of the screen.
+**Text Input Policy:**
+- After the human provides a value for a text field:
+    - If the keyboard is visible, you may use `text("...")` to enter the value.
+    - If the keyboard is NOT visible, tap to focus the textbox first (by numeric tag or grid area), then wait for the keyboard to appear.
+    - Do **not** call `text("...")` unless the keyboard is visible.
 
 3. long_press(area: int, subarea: str)
 This function is used to long press a grid area shown on the smartphone screen. "area" is the integer label assigned to 
