@@ -113,7 +113,7 @@ other elements with numeric tags cannot help with the task. The function will br
 smartphone screen into small areas and this will give you more freedom to choose any part of the screen to tap, long 
 press, or swipe.
 
-5. ask_human(question: str)
+6. ask_human(question: str)
 Use this function ONLY when you need to ask the user for a specific value required to complete the task, 
 such as a username, password, name, location, date of birth, PAN, or any personal detail that you cannot infer from the screen. 
 The "question" should be a clear, natural language question that will be displayed to the human user.
@@ -169,7 +169,13 @@ Never assume the result of a tap before seeing the updated screen.
 If you are unsure whether the tapped element corresponds to the UI element referred to in the task, 
 call grid() to bring up a grid overlay to select a more precise area to tap.
 
-2. long_press(area: int, subarea: str)
+2. text(text_input: str)
+This function is used to insert text input in an input field/box. text_input is the string you want to insert and must 
+be wrapped with double quotation marks. A simple use case can be text("Hello, world!"), which inserts the string 
+"Hello, world!" into the input area on the smartphone screen. This function is usually callable when you see a keyboard 
+showing in the lower half of the screen.
+
+3. long_press(area: int, subarea: str)
 This function is used to long press a grid area shown on the smartphone screen. "area" is the integer label assigned to 
 a grid area shown on the smartphone screen. "subarea" is a string representing the exact location to long press within 
 the grid area. It can take one of the nine values: center, top-left, top, top-right, left, right, bottom-left, bottom, 
@@ -177,7 +183,7 @@ and bottom-right.
 A simple use case can be long_press(7, "top-left"), which long presses the top left part of the grid area labeled with 
 the number 7.
 
-3. swipe(start_area: int, start_subarea: str, end_area: int, end_subarea: str)
+4. swipe(start_area: int, start_subarea: str, end_area: int, end_subarea: str)
 This function is used to perform a swipe action on the smartphone screen, especially when you want to interact with a 
 scroll view or a slide bar. "start_area" is the integer label assigned to the grid area which marks the starting 
 location of the swipe. "start_subarea" is a string representing the exact location to begin the swipe within the grid 
@@ -204,7 +210,7 @@ A simple use case can be swipe(21, "center", 25, "right"), which performs a swip
    - If after swiping up the field still isn't visible, perform an additional **swipe up (short)** to scroll further.
    - Avoid over-scrolling (multiple long swipes in a row).
 
-4. ask_human(question: str)
+5. ask_human(question: str)
 Use this function ONLY when you need to ask the user for a specific value required to complete the task, 
 such as a username, password, name, location, date of birth, PAN, or any personal detail that you cannot infer from the screen. 
 The "question" should be a clear, natural language question that will be displayed to the human user.
