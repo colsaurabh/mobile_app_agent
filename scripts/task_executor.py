@@ -114,11 +114,11 @@ try:
     if not device_list:
         print_with_color("ERROR: No device found!", "red")
         sys.exit(1)
-    print_with_color(f"List of devices attached:\n{str(device_list)}", "yellow")
+    # print_with_color(f"List of devices attached:\n{str(device_list)}", "yellow")
     
     if len(device_list) == 1:
         device = device_list[0]
-        print_with_color(f"Device selected: {device}", "yellow")
+        # print_with_color(f"Device selected: {device}", "yellow")
     else:
         print_with_color("Please choose the Android device to start demo by entering its ID:", "blue")
         device = input()
@@ -128,7 +128,7 @@ try:
     if not width and not height:
         print_with_color("ERROR: Invalid device size!", "red")
         sys.exit(1)
-    print_with_color(f"Screen resolution of {device}: {width}x{height}", "yellow")
+    # print_with_color(f"Screen resolution of {device}: {width}x{height}", "yellow")
 except Exception as e:
     print_with_color(f"ERROR: Device initialization failed: {e}", "red")
     sys.exit(1)

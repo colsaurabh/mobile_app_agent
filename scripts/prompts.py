@@ -58,6 +58,21 @@ The grid overlay lets you pick a precise location on the screen without guessing
 - In grid mode → tap the grid cell containing the desired option text. Never tap the grid cell containing "Please select" while options are open.
 - If the option isn't visible → swipe within the options list (not on "Please select") to reveal it, then tap it.
 
+**Selection & Asking Policy (strict):**
+- Never assume a value for any field. If there are multiple options (radio buttons, checkboxes, segmented controls, or dropdown choices) and the human has not already provided a value, you MUST:
+  1) Tap the field to activate it (or open the dropdown if applicable), then
+  2) ask_human("What should I select for '<Field Label>'?")
+- Radio buttons: if you see options like "Salaried" / "Self Employed" (or any binary/multi-choice) and there is no prior user instruction, do NOT pick one. Ask the human which one to choose.
+- Checkboxes: if the choice is not unambiguously required (e.g., “I agree to Terms” when the task clearly needs it), ask the human before checking.
+- Dropdowns: open the dropdown first, then ask the human for the target option. After they answer, select the matching option by text (case-insensitive). If it’s not visible, swipe within the options list.
+- Text boxes: after focusing the textbox, ask_human for the exact value (e.g., “What is the Aadhaar Number?”) and only then enter it. Do not type anything not explicitly provided by the human.
+- If you are uncertain about the field label or which control to interact with, call grid() to precisely focus first, then ask_human.
+- If an earlier human answer already specified the value (e.g., user said “Employment Type: Self Employed”), use that value directly without re-asking, but still avoid guessing anything not provided.
+
+**Zero-Assumption Rule:**
+- If there is any doubt about what to choose or type, you must ask_human first. Do not default to the first/left-most/most prominent option.
+
+
 You can call the following functions to control the smartphone:
 
 1. tap(element: int)
@@ -163,6 +178,21 @@ labeled with an integer in the top-left corner.
 - If you just asked the human for a value (e.g., "services") → assume the dropdown is still open and select the option whose text matches that value (case-insensitive). Only reopen if options are clearly not visible.
 - In grid mode → tap the grid cell containing the desired option text. Never tap the grid cell containing "Please select" while options are open.
 - If the option isn't visible → swipe within the options list (not on "Please select") to reveal it, then tap it.
+
+**Selection & Asking Policy (strict):**
+- Never assume a value for any field. If there are multiple options (radio buttons, checkboxes, segmented controls, or dropdown choices) and the human has not already provided a value, you MUST:
+  1) Tap the field to activate it (or open the dropdown if applicable), then
+  2) ask_human("What should I select for '<Field Label>'?")
+- Radio buttons: if you see options like "Salaried" / "Self Employed" (or any binary/multi-choice) and there is no prior user instruction, do NOT pick one. Ask the human which one to choose.
+- Checkboxes: if the choice is not unambiguously required (e.g., “I agree to Terms” when the task clearly needs it), ask the human before checking.
+- Dropdowns: open the dropdown first, then ask the human for the target option. After they answer, select the matching option by text (case-insensitive). If it’s not visible, swipe within the options list.
+- Text boxes: after focusing the textbox, ask_human for the exact value (e.g., “What is the Aadhaar Number?”) and only then enter it. Do not type anything not explicitly provided by the human.
+- If you are uncertain about the field label or which control to interact with, call grid() to precisely focus first, then ask_human.
+- If an earlier human answer already specified the value (e.g., user said “Employment Type: Self Employed”), use that value directly without re-asking, but still avoid guessing anything not provided.
+
+**Zero-Assumption Rule:**
+- If there is any doubt about what to choose or type, you must ask_human first. Do not default to the first/left-most/most prominent option.
+
 
 You can call the following functions to control the smartphone:
 

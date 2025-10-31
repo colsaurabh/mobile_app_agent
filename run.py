@@ -12,10 +12,11 @@ args = vars(parser.parse_args())
 app = args["app"]
 root_dir = args["root_dir"]
 
-print_with_color("Welcome to the deployment phase of AppAgent!\nBefore giving me the task, you should first tell me "
-                 "the name of the app you want me to operate and what documentation base you want me to use. I will "
-                 "try my best to complete the task without your intervention. First, please enter the main interface "
-                 "of the app on your phone and provide the following information.", "yellow")
+print_with_color("Welcome to the deployment phase of AppAgent", "yellow")
+# print_with_color("Welcome to the deployment phase of AppAgent!\nBefore giving me the task, you should first tell me "
+#                  "the name of the app you want me to operate and what documentation base you want me to use. I will "
+#                  "try my best to complete the task without your intervention. First, please enter the main interface "
+#                  "of the app on your phone and provide the following information.", "yellow")
 
 if not app:
     # ToDo: Saurabh. Change later to different apps too.
