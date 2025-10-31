@@ -27,8 +27,9 @@ DARK_MODE: false  # Set this to true if your app is in dark mode to enhance the 
 MIN_DIST: 10  # The minimum distance between elements to prevent overlapping during the labeling process
 GRID_SIZE: 35 # 40 being a good grid size
 
-ENABLE_VOICE: true
+ENABLE_VOICE: false
 VOICE_TYPE: "Veena" # e.g. "Samantha", "Alex", "Ava", "Victoria", "Veena", "Rishi"
 VOICE_SPEED: 185 # e.g. "170" (words per minute)
 
 ALWAYS_GRID: true
+DISABLE_XML: false

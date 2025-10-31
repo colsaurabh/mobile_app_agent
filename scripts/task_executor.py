@@ -12,7 +12,7 @@ from config import load_config
 from and_controller import list_all_devices, AndroidController
 from utils import traverse_tree
 from model import parse_explore_rsp, parse_grid_rsp, OpenAIModel, GeminiModel
-from utils import print_with_color, draw_bbox_multi, draw_grid, calculate_image_similarity
+from utils import print_with_color, draw_bbox_multi, draw_grid, area_to_xy, calculate_image_similarity
 
 arg_desc = "AppAgent Executor"
 parser = argparse.ArgumentParser(formatter_class=argparse.RawDescriptionHelpFormatter, description=arg_desc)
@@ -156,30 +156,7 @@ else:
     grid_on = False
 rows, cols = 0, 0
 
-
-def area_to_xy(area, subarea):
-    area -= 1
-    row, col = area // cols, area % cols
-    x_0, y_0 = col * (width // cols), row * (height // rows)
-    if subarea == "top-left":
-        x, y = x_0 + (width // cols) // 4, y_0 + (height // rows) // 4
-    elif subarea == "top":
-        x, y = x_0 + (width // cols) // 2, y_0 + (height // rows) // 4
-    elif subarea == "top-right":
-        x, y = x_0 + (width // cols) * 3 // 4, y_0 + (height // rows) // 4
-    elif subarea == "left":
-        x, y = x_0 + (width // cols) // 4, y_0 + (height // rows) // 2
-    elif subarea == "right":
-        x, y = x_0 + (width // cols) * 3 // 4, y_0 + (height // rows) // 2
-    elif subarea == "bottom-left":
-        x, y = x_0 + (width // cols) // 4, y_0 + (height // rows) * 3 // 4
-    elif subarea == "bottom":
-        x, y = x_0 + (width // cols) // 2, y_0 + (height // rows) * 3 // 4
-    elif subarea == "bottom-right":
-        x, y = x_0 + (width // cols) * 3 // 4, y_0 + (height // rows) * 3 // 4
-    else:
-        x, y = x_0 + (width // cols) // 2, y_0 + (height // rows) // 2
-    return x, y
+disable_xml = configs.get("DISABLE_XML", False)
 
 pending_human_input = None
 pending_question = None
@@ -196,9 +173,13 @@ while round_count < configs["MAX_ROUNDS"]:
 
     try:
         screenshot_path = controller.get_screenshot(f"{dir_name}_{round_count}", task_dir)
-        xml_path = controller.get_xml(f"{dir_name}_{round_count}", task_dir)
-        if screenshot_path == "ERROR" or xml_path == "ERROR":
+        if screenshot_path == "ERROR":
             break
+
+        if not disable_xml:
+            xml_path = controller.get_xml(f"{dir_name}_{round_count}", task_dir)
+            if xml_path == "ERROR":
+                break
     except Exception as e:
         print_with_color(f"ERROR: Screenshot or XML generation failed: {e}", "red")
         sys.exit(1)
@@ -215,6 +196,10 @@ while round_count < configs["MAX_ROUNDS"]:
     else:
         clickable_list = []
         focusable_list = []
+        if disable_xml:
+            print_with_color("ERROR: XML generation is disabled", "red")
+            break
+
         traverse_tree(xml_path, clickable_list, "clickable", True)
         traverse_tree(xml_path, focusable_list, "focusable", True)
         elem_list = clickable_list.copy()
@@ -457,7 +442,7 @@ while round_count < configs["MAX_ROUNDS"]:
                     print_with_color(f"ERROR: Invalid subarea '{subarea}'. Must be one of: {', '.join(valid_subareas)}", "red")
                     continue
                 
-                x, y = area_to_xy(area, subarea)
+                x, y = area_to_xy(area, subarea, height, width, rows, cols)
                 
                 # Check if area_to_xy returned valid coordinates
                 if x is None or y is None:
@@ -502,8 +487,8 @@ while round_count < configs["MAX_ROUNDS"]:
                     print_with_color(f"ERROR: Invalid end subarea '{end_subarea}'. Must be one of: {', '.join(valid_subareas)}", "red")
                     continue
                 
-                start_x, start_y = area_to_xy(start_area, start_subarea)
-                end_x, end_y = area_to_xy(end_area, end_subarea)
+                start_x, start_y = area_to_xy(start_area, start_subarea, height, width, rows, cols)
+                end_x, end_y = area_to_xy(end_area, end_subarea, height, width, rows, cols)
                 
                 # Check if area_to_xy returned valid coordinates
                 if start_x is None or start_y is None or end_x is None or end_y is None:
