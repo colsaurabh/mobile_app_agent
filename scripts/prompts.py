@@ -49,7 +49,6 @@ numeric tag of each interactive element is located in the center of the element.
 **Important:** Never hallucinate or guess random element numbers that do not clearly match the UI elements in the screenshot. 
 **Important:** If you are unsure or confused about which element to interact with, immediately call the grid() function to bring up a grid overlay. 
 The grid overlay lets you pick a precise location on the screen without guessing element numbers.
-**Important: When a "Terms & Conditions" or similar link/checkbox is present, only tap the checkbox to accept the terms without attempting to open the document link.**
 
 **Dropdown Interaction Rules (must follow):**
 - If the field shows "Please select" and NO options are visible → tap the field ONCE to open the dropdown.
@@ -64,7 +63,7 @@ The grid overlay lets you pick a precise location on the screen without guessing
   2) ask_human("What should I select for '<Field Label>'?")
 - Radio buttons: if you see options like "Salaried" / "Self Employed" (or any binary/multi-choice) and there is no prior user instruction, do NOT pick one. Ask the human which one to choose.
 - Checkboxes: if the choice is not unambiguously required (e.g., “I agree to Terms” when the task clearly needs it), ask the human before checking.
-- Dropdowns: open the dropdown first, then ask the human for the target option. After they answer, select the matching option by text (case-insensitive). If it’s not visible, swipe within the options list.
+- Dropdowns: open the dropdown first, then ask the human for the target option. After they answer, select the matching option by text (case-insensitive). If it's not visible, swipe within the options list.
 - Text boxes: after focusing the textbox, ask_human for the exact value (e.g., “What is the Aadhaar Number?”) and only then enter it. Do not type anything not explicitly provided by the human.
 - If you are uncertain about the field label or which control to interact with, call grid() to precisely focus first, then ask_human.
 - If an earlier human answer already specified the value (e.g., user said “Employment Type: Self Employed”), use that value directly without re-asking, but still avoid guessing anything not provided.
@@ -72,6 +71,14 @@ The grid overlay lets you pick a precise location on the screen without guessing
 **Zero-Assumption Rule:**
 - If there is any doubt about what to choose or type, you must ask_human first. Do not default to the first/left-most/most prominent option.
 
+**Before Form Submission**:
+- Check if there is a "Terms & Conditions" checkbox. Always tap the checkbox to accept terms if required.
+- Never tap the link or any text that opens the terms document.
+
+**Submit Confirmation Policy (strict):**
+- Before tapping any UI element that submits or completes the form, the agent MUST ask the user "Do you want me to submit the form now?" using ask_human().
+- Only proceed with the submission if the user confirms.
+- For now, this applies only to submission actions.
 
 You can call the following functions to control the smartphone:
 
@@ -170,7 +177,6 @@ labeled with an integer in the top-left corner.
 <human_answer_context>
 
 **Important:** Never hallucinate or guess random element numbers that do not clearly match the UI elements in the screenshot. 
-**Important: When a "Terms & Conditions" or similar link/checkbox is present, only tap the checkbox to accept the terms without attempting to open the document link.**
 
 **Dropdown Interaction Rules (must follow):**
 - If the field shows "Please select" and NO options are visible → tap the field ONCE to open the dropdown.
@@ -185,7 +191,7 @@ labeled with an integer in the top-left corner.
   2) ask_human("What should I select for '<Field Label>'?")
 - Radio buttons: if you see options like "Salaried" / "Self Employed" (or any binary/multi-choice) and there is no prior user instruction, do NOT pick one. Ask the human which one to choose.
 - Checkboxes: if the choice is not unambiguously required (e.g., “I agree to Terms” when the task clearly needs it), ask the human before checking.
-- Dropdowns: open the dropdown first, then ask the human for the target option. After they answer, select the matching option by text (case-insensitive). If it’s not visible, swipe within the options list.
+- Dropdowns: open the dropdown first, then ask the human for the target option. After they answer, select the matching option by text (case-insensitive). If it's not visible, swipe within the options list.
 - Text boxes: after focusing the textbox, ask_human for the exact value (e.g., “What is the Aadhaar Number?”) and only then enter it. Do not type anything not explicitly provided by the human.
 - If you are uncertain about the field label or which control to interact with, call grid() to precisely focus first, then ask_human.
 - If an earlier human answer already specified the value (e.g., user said “Employment Type: Self Employed”), use that value directly without re-asking, but still avoid guessing anything not provided.
@@ -193,6 +199,14 @@ labeled with an integer in the top-left corner.
 **Zero-Assumption Rule:**
 - If there is any doubt about what to choose or type, you must ask_human first. Do not default to the first/left-most/most prominent option.
 
+**Before Form Submission**:
+- Check if there is a "Terms & Conditions" checkbox. Always tap the checkbox to accept terms if required.
+- Never tap the link or any text that opens the terms document.
+
+**Submit Confirmation Policy (strict):**
+- Before tapping any UI element that submits or completes the form, the agent MUST ask the user "Do you want me to submit the form now?" using ask_human().
+- Only proceed with the submission if the user confirms.
+- For now, this applies only to submission actions.
 
 You can call the following functions to control the smartphone:
 
@@ -467,3 +481,5 @@ Documentation: <describe the function of the UI element>
 #    - Only if you can confirm the dropdown is closed (options disappeared), then tap the field again to reopen it, and immediately select the desired option.
 # **CRITICAL RULE**:
 # Once the dropdown has been opened, never click the "Please select" text again until you have either selected an option or confirmed the dropdown closed.
+
+# **Important: When a "Terms & Conditions" or similar link/checkbox is present, only tap the checkbox to accept the terms without attempting to open the document link.**
