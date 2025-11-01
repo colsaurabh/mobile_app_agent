@@ -34,6 +34,14 @@ class IOSController:
         self._initialize_driver()
         self.width, self.height = self.get_device_size()
     
+    def __del__(self):
+        """Cleanup: close driver connection."""
+        if self.driver:
+            try:
+                self.driver.quit()
+            except:
+                pass
+    
     def _initialize_driver(self):
         """Initialize Appium WebDriver for iOS device."""
         try:
@@ -107,21 +115,6 @@ class IOSController:
 
 
 
-    def back(self):
-        """Send iOS back action (if available) or swipe from left edge."""
-        try:
-            # iOS doesn't have a universal back button, but we can try swipe from left
-            self.driver.execute_script("mobile: swipe", {
-                "direction": "right",
-                "fromX": 0,
-                "fromY": self.height // 2,
-                "toX": self.width // 4,
-                "toY": self.height // 2
-            })
-            return "OK"
-        except Exception as e:
-            print_with_color(f"Failed to execute back: {e}", "red")
-            return "ERROR"
     
     def text(self, input_str, clear_first=False):
         """Input text on iOS device."""
@@ -219,14 +212,23 @@ class IOSController:
         except Exception as e:
             print_with_color(f"Failed to swipe precise: {e}", "red")
             return "ERROR"
+
+    def back(self):
+        """Send iOS back action (if available) or swipe from left edge."""
+        try:
+            # iOS doesn't have a universal back button, but we can try swipe from left
+            self.driver.execute_script("mobile: swipe", {
+                "direction": "right",
+                "fromX": 0,
+                "fromY": self.height // 2,
+                "toX": self.width // 4,
+                "toY": self.height // 2
+            })
+            return "OK"
+        except Exception as e:
+            print_with_color(f"Failed to execute back: {e}", "red")
+            return "ERROR"
     
-    def __del__(self):
-        """Cleanup: close driver connection."""
-        if self.driver:
-            try:
-                self.driver.quit()
-            except:
-                pass
 
 
 # Then update `scripts/and_controller.py` to maintain backward compatibility:
