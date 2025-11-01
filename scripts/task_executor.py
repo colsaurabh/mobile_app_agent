@@ -9,7 +9,7 @@ import time
 
 import prompts
 from config import load_config
-from and_controller import list_all_devices, AndroidController
+from device_controller import list_all_devices, DeviceController
 from utils import traverse_tree
 from model import parse_explore_rsp, parse_grid_rsp, OpenAIModel, GeminiModel
 from utils import print_with_color, draw_bbox_multi, draw_grid, area_to_xy, calculate_image_similarity
@@ -123,7 +123,7 @@ try:
         print_with_color("Please choose the Android device to start demo by entering its ID:", "blue")
         device = input()
     
-    controller = AndroidController(device)
+    controller = DeviceController(device)
     width, height = controller.get_device_size()
     if not width and not height:
         print_with_color("ERROR: Invalid device size!", "red")
