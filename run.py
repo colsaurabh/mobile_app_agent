@@ -1,7 +1,7 @@
 import argparse
 import os
 
-from scripts.utils import print_with_color
+from scripts.print_controller import print_with_color
 
 arg_desc = "AppAgent - deployment phase"
 parser = argparse.ArgumentParser(formatter_class=argparse.RawDescriptionHelpFormatter, description=arg_desc)

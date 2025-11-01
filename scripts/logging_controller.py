@@ -1,5 +1,6 @@
 from enum import Enum
-from utils import print_with_color
+from datetime import datetime
+from print_controller import print_with_color
 
 # Logger instance (will be initialized after config load)
 logger = None
@@ -37,14 +38,17 @@ class Logger:
     def __init__(self, mode="prod"):
         self.mode = mode
         self.is_dev = mode.lower() == "dev"
+        self.is_stage = mode.lower() == "stage"
+        self.is_prod = mode.lower() == "prod"
         
     def _should_print(self, level: str):
         """Determine if message should be printed based on mode"""
         if self.is_dev:
             return True  # Show everything in development
-        
-        # Production mode: only prints SHOW messages
-        return level in ["SHOW"]
+        elif self.is_stage:
+            return level in ["INFO", "WARNING", "ERROR", "SHOW"]
+        elif self.is_prod:
+            return level in ["SHOW"]
 
     def _should_log(self, level: str):
         """Determine if message should be logged based on mode"""
@@ -53,31 +57,40 @@ class Logger:
         
         # Production mode: log "INFO", "WARNING", "ERROR", "SHOW" messages
         return level in ["INFO", "WARNING", "ERROR", "SHOW"]
+
+    def _get_timestamp(self):
+        """Get formatted timestamp"""
+        return datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     
-    def debug(self, text: str, color=""):
+    def debug(self, text: str, color="yellow"):
         """Debug messages (only shown in development mode)"""
         if self._should_print("DEBUG"):
-            print_with_color(text, color)
+            timestamp = self._get_timestamp()
+            print_with_color(f"[{timestamp}] {text}", color)
     
-    def info(self, text: str, color=""):
+    def info(self, text: str, color="green"):
         """Info messages (only shown in development mode)"""
         if self._should_print("INFO"):
-            print_with_color(text, color)
+            timestamp = self._get_timestamp()
+            print_with_color(f"[{timestamp}] {text}", color)
     
-    def warning(self, text: str, color="yellow"):
+    def warning(self, text: str, color="magenta"):
         """Warning messages (only shown in development mode)"""
         if self._should_print("WARNING"):
-            print_with_color(text, color)
+            timestamp = self._get_timestamp()
+            print_with_color(f"[{timestamp}] {text}", color)
     
     def error(self, text: str, color="red"):
         """Error messages (only shown in development mode)"""
         if self._should_print("ERROR"):
-            print_with_color(text, color)
+            timestamp = self._get_timestamp()
+            print_with_color(f"[{timestamp}] {text}", color)
 
     def show(self, text: str, color="blue"):
         """Show messages (shown in production mode)"""
         if self._should_print("SHOW"):
-            print_with_color(text, color)
+            timestamp = self._get_timestamp()
+            print_with_color(f"[{timestamp}] {text}", color)
 
 
 

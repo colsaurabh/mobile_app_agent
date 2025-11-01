@@ -3,8 +3,6 @@ import cv2
 import pyshine as ps
 import xml.etree.ElementTree as ET
 
-from colorama import Fore, Style
-
 from PIL import Image
 import io
 import base64
@@ -20,35 +18,22 @@ import soundfile as sf
 from skimage.metrics import structural_similarity as ssim
 import numpy as np
 
+from logging_controller import get_logger
+
 from config import load_config
 configs = load_config()
+
+try:
+    logger = get_logger()
+except Exception as e:
+    print(f"ERROR: Failed to load logger configuration: {e}")
+    sys.exit(1)
 
 class AndroidElement:
     def __init__(self, uid, bbox, attrib):
         self.uid = uid
         self.bbox = bbox
         self.attrib = attrib
-
-def print_with_color(text: str, color=""):
-    if color == "red":
-        print(Fore.RED + text)
-    elif color == "green":
-        print(Fore.GREEN + text)
-    elif color == "yellow":
-        print(Fore.YELLOW + text)
-    elif color == "blue":
-        print(Fore.BLUE + text)
-    elif color == "magenta":
-        print(Fore.MAGENTA + text)
-    elif color == "cyan":
-        print(Fore.CYAN + text)
-    elif color == "white":
-        print(Fore.WHITE + text)
-    elif color == "black":
-        print(Fore.BLACK + text)
-    else:
-        print(text)
-    print(Style.RESET_ALL)
 
 def area_to_xy(area, subarea, height, width, rows, cols):
     area -= 1
@@ -114,7 +99,7 @@ def draw_grid(img_path, output_path, rows=None, cols=None, min_cell_px=40):
         cv2.imwrite(output_path, image)
         return rows, cols
     except Exception as e:
-        print_with_color(f"ERROR in draw_grid: {e}", "red")
+        logger.error(f"ERROR in draw_grid: {e}")
         return 0, 0
 
 def encode_image(image_path, max_width=800, quality=75):
@@ -149,7 +134,7 @@ def encode_image(image_path, max_width=800, quality=75):
             img_str = base64.b64encode(buffered.getvalue()).decode("utf-8")
             return img_str
     except Exception as e:
-        print_with_color(f"ERROR in encode_image: {e}", "red")
+        logger.error(f"ERROR in encode_image: {e}")
         return ""
 
 def calculate_image_similarity(img_path1, img_path2):
@@ -165,7 +150,7 @@ def calculate_image_similarity(img_path1, img_path2):
                 img_gray = img.convert("L")
                 return np.array(img_gray)
         except Exception as e:
-            print_with_color(f"ERROR loading image {image_path}: {e}", "red")
+            logger.error(f"ERROR loading image {image_path}: {e}")
             return None
 
     try:
@@ -191,7 +176,7 @@ def calculate_image_similarity(img_path1, img_path2):
         score, _ = ssim(img1_array, img2_array, full=True)
         return score
     except Exception as e:
-        print_with_color(f"ERROR computing similarity: {e}", "red")
+        logger.error(f"ERROR computing similarity: {e}")
         return 0.0
 
 def get_id_from_element(elem):
@@ -341,7 +326,7 @@ def draw_bbox_multi(img_path, output_path, elem_list, record_mode=False, dark_mo
                                     vspace=10, hspace=10, font_scale=1, thickness=2, background_RGB=bg_color,
                                     text_RGB=text_color, alpha=0.5)
         except Exception as e:
-            print_with_color(f"ERROR: An exception occurs while labeling the image\n{e}", "red")
+            logger.error(f"ERROR: An exception occurs while labeling the image\n{e}")
         count += 1
     cv2.imwrite(output_path, imgcv)
     return imgcv
@@ -372,7 +357,7 @@ def _record_wav_tmp(seconds=12, samplerate=16000, channels=1):
         sf.write(path, audio, samplerate)
         return path
     except Exception as e:
-        print(f"Error during audio recording: {e}")
+        logger.error(f"Error during audio recording: {e}")
         return None
 
 def transcribe_with_openai(wav_path: str):
@@ -394,16 +379,16 @@ def transcribe_with_openai(wav_path: str):
         data = resp.json()
         return data.get("text", "").strip()
     except OSError as oe:
-        print(f"File error: {oe}")
+        logger.error(f"File error: {oe}")
         return None
     except Exception as e:
-        print(f"Unexpected error: {e}")
+        logger.error(f"Unexpected error: {e}")
         return None
 
 def voice_ask(prompt_text: str, max_seconds: int = 15) -> str:
     # Speak prompt, record answer, transcribe; fallback to keyboard if empty/failed
-    print_with_color(prompt_text, "blue")
-    # print_with_color("Activating voice agent", "blue")
+    logger.show(prompt_text)
+    # logger.show("Activating voice agent")
     speak(prompt_text)
     try:
         wav_path = _record_wav_tmp(seconds=max_seconds)
@@ -411,7 +396,7 @@ def voice_ask(prompt_text: str, max_seconds: int = 15) -> str:
             text = transcribe_with_openai(wav_path)
             cost_per_minute = 0.006
             usage_cost = (max_seconds / 60) * cost_per_minute
-            # print_with_color(f"Estimated transcription cost: ${usage_cost:.6f}", "yellow")
+            # logger.debug(f"Estimated transcription cost: ${usage_cost:.6f}")
             speak(text)
         finally:
             try:
@@ -419,9 +404,9 @@ def voice_ask(prompt_text: str, max_seconds: int = 15) -> str:
             except Exception:
                 pass
         if text:
-            print_with_color(f"(Voice Response): {text}", "cyan")
+            logger.show(f"(Voice Response): {text}")
             return text
     except Exception as e:
-        print_with_color(f"Voice input failed: {e}", "red")
+        logger.error(f"Voice input failed: {e}")
     # Fallback to manual input
     return input()

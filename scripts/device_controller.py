@@ -3,7 +3,6 @@ Generic device controller that provides a unified interface
 for controlling both Android and iOS devices.
 """
 from config import load_config
-from utils import print_with_color
 
 configs = load_config()
 

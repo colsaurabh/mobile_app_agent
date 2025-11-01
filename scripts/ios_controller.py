@@ -8,7 +8,7 @@ from appium.options.ios import XCUITestOptions
 from appium.webdriver.common.appiumby import AppiumBy
 
 from config import load_config
-from utils import print_with_color
+from print_controller import print_with_color
 
 configs = load_config()
 

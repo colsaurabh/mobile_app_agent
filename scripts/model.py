@@ -2,14 +2,22 @@ import re
 from abc import abstractmethod
 from typing import List
 from http import HTTPStatus
+import sys
 
 import requests
 import dashscope
 
-from utils import print_with_color, encode_image, speak
+from utils import encode_image, speak
 
 from config import load_config
 configs = load_config()
+
+from logging_controller import get_logger
+try:
+    logger = get_logger()
+except Exception as e:
+    print(f"ERROR: Failed to load logger configuration: {e}")
+    sys.exit(1)
 
 class BaseModel:
     def __init__(self):
@@ -60,14 +68,12 @@ class OpenAIModel(BaseModel):
             "max_completion_tokens": self.max_completion_tokens
         }
         response = requests.post(self.base_url, headers=headers, json=payload).json()
-        print("Response from requests is ", response)
         if "error" not in response:
             usage = response["usage"]
             prompt_tokens = usage["prompt_tokens"]
             completion_tokens = usage["completion_tokens"]
-            print_with_color(f"Request cost is "
-                             f"${'{0:.2f}'.format(prompt_tokens / 1000 * 0.01 + completion_tokens / 1000 * 0.03)}",
-                             "yellow")
+            logger.debug(f"Request cost is "
+                             f"${'{0:.2f}'.format(prompt_tokens / 1000 * 0.01 + completion_tokens / 1000 * 0.03)}")
         else:
             return False, response["error"]["message"]
         return True, response["choices"][0]["message"]["content"]
@@ -132,25 +138,24 @@ class GeminiModel(BaseModel):
             prompt_tokens = usage.get("promptTokenCount", 0)
             completion_tokens = usage.get("candidatesTokenCount", 0)
             total_tokens = usage.get("totalTokenCount", 0)
-            # print_with_color(f"Token usage (Gemini) - prompt: {prompt_tokens}, completion: {completion_tokens}, total: {total_tokens}", "yellow")
+            # logger.debug(f"Token usage (Gemini) - prompt: {prompt_tokens}, completion: {completion_tokens}, total: {total_tokens}")
 
         return True, text if text else "``(No text in Gemini response)``"
 
 
 def parse_explore_rsp(rsp):
     try:
-        # print_with_color(f"Original response: {rsp}", "yellow")
         observation = re.findall(r"Observation: (.*?)$", rsp, re.MULTILINE)[0]
         think = re.findall(r"Thought: (.*?)$", rsp, re.MULTILINE)[0]
         act = re.findall(r"Action: (.*?)$", rsp, re.MULTILINE)[0]
         last_act = re.findall(r"Summary: (.*?)$", rsp, re.MULTILINE)[0]
         readable = re.findall(r"ReadableSummarisation: (.*?)$", rsp, re.MULTILINE)[0]
 
-        print_with_color(f"Observation: => {observation}", "magenta")
-        print_with_color(f"Thought: => {think}", "magenta")
-        print_with_color(f"Action: => {act}", "green")
-        print_with_color(f"Summary: => {last_act}", "magenta")
-        print_with_color(f"ReadableSummarisation: => {readable}", "magenta")
+        logger.debug(f"Observation: => {observation}")
+        logger.debug(f"Thought: => {think}")
+        logger.info(f"Action: => {act}")
+        logger.debug(f"Summary: => {last_act}")
+        logger.debug(f"ReadableSummarisation: => {readable}")
 
         if configs.get("ENABLE_VOICE", False):
             speak(readable)
@@ -163,29 +168,6 @@ def parse_explore_rsp(rsp):
         elif act_name == "text":
             input_str = re.findall(r"text\((.*?)\)", act)[0][1:-1]
             return [act_name, input_str, last_act]
-        # elif act_name == "text":
-        #     # Extracts the element and string from text(12, "Some string")
-        #     params = re.findall(r'text\((.*?)\)', act)[0]
-        #     element_str, input_str_with_quotes = params.split(',', 1)
-        #     element = int(element_str.strip())
-        #     input_str = input_str_with_quotes.strip()[1:-1]  # Removes the surrounding quotes
-        #     return [act_name, element, input_str, last_act]
-        # elif act_name == "text":
-        #     params = re.findall(r"text\((.*?)\)", act)[0]
-        #     # Case 1: text(AREA, "string")
-        #     m = re.match(r"\s*(\d+)\s*,\s*\"(.*?)\"\s*$", params)
-        #     if m:
-        #         area = int(m.group(1))
-        #         input_str = m.group(2)
-        #         # return [act_name, area, input_str, last_act]
-        #         return [act_name, input_str, last_act]
-        #     # Case 2: text("string")
-        #     m = re.match(r"\s*\"(.*?)\"\s*$", params)
-        #     if m:
-        #         input_str = m.group(1)
-        #         return [act_name, input_str, last_act]
-        #     print_with_color("ERROR: Failed to parse parameters for text()", "red")
-        #     return ["ERROR"]
         elif act_name == "long_press":
             area = int(re.findall(r"long_press\((.*?)\)", act)[0])
             return [act_name, area, last_act]
@@ -203,11 +185,11 @@ def parse_explore_rsp(rsp):
             question = re.findall(r'ask_human\("(.*?)"\)', act)[0]
             return [act_name, question, last_act]
         else:
-            print_with_color(f"ERROR: Undefined act {act_name}!", "red")
+            logger.error(f"ERROR: Undefined act {act_name}!")
             return ["ERROR"]
     except Exception as e:
-        print_with_color(f"ERROR: an exception occurs while parsing the model response in parse_explore_rsp: {e}", "red")
-        print_with_color(rsp, "red")
+        logger.error(f"ERROR: an exception occurs while parsing the model response in parse_explore_rsp: {e}")
+        logger.error(rsp)
         return ["ERROR"]
 
 
@@ -219,11 +201,11 @@ def parse_grid_rsp(rsp):
         last_act = re.findall(r"Summary: (.*?)$", rsp, re.MULTILINE)[0]
         readable = re.findall(r"ReadableSummarisation: (.*?)$", rsp, re.MULTILINE)[0]
 
-        print_with_color(f"Observation: => {observation}", "magenta")
-        print_with_color(f"Thought: => {think}", "magenta")
-        print_with_color(f"Action: => {act}", "green")
-        print_with_color(f"Summary: => {last_act}", "magenta")
-        print_with_color(f"ReadableSummarisation: => {readable}", "magenta")
+        logger.debug(f"Observation: => {observation}")
+        logger.debug(f"Thought: => {think}")
+        logger.info(f"Action: => {act}")
+        logger.debug(f"Summary: => {last_act}")
+        logger.debug(f"ReadableSummarisation: => {readable}")
 
         if configs.get("ENABLE_VOICE", False):
             speak(readable)
@@ -257,34 +239,30 @@ def parse_grid_rsp(rsp):
             question = re.findall(r'ask_human\("(.*?)"\)', act)[0]
             return [act_name, question, last_act]
         else:
-            print_with_color(f"ERROR: Undefined act {act_name}!", "red")
+            logger.error(f"ERROR: Undefined act {act_name}!")
             return ["ERROR"]
     except Exception as e:
-        print_with_color(f"ERROR: an exception occurs while parsing the model response in parse_grid_rsp: {e}", "red")
-        print_with_color(rsp, "red")
+        logger.error(f"ERROR: an exception occurs while parsing the model response in parse_grid_rsp: {e}")
+        logger.error(rsp)
         return ["ERROR"]
 
 
 def parse_reflect_rsp(rsp):
     try:
-        print_with_color(f"Original response: {rsp}", "yellow")
         decision = re.findall(r"Decision: (.*?)$", rsp, re.MULTILINE)[0]
         think = re.findall(r"Thought: (.*?)$", rsp, re.MULTILINE)[0]
-        print_with_color("Decision:", "yellow")
-        print_with_color(decision, "magenta")
-        print_with_color("Thought:", "yellow")
-        print_with_color(think, "magenta")
+        logger.debug(f"Decision: {decision}")
+        logger.debug(f"Thought: {think}")
         if decision == "INEFFECTIVE":
             return [decision, think]
         elif decision == "BACK" or decision == "CONTINUE" or decision == "SUCCESS":
             doc = re.findall(r"Documentation: (.*?)$", rsp, re.MULTILINE)[0]
-            print_with_color("Documentation:", "yellow")
-            print_with_color(doc, "magenta")
+            logger.debug(f"Documentation: {doc}")
             return [decision, think, doc]
         else:
-            print_with_color(f"ERROR: Undefined decision {decision}!", "red")
+            logger.error(f"ERROR: Undefined decision {decision}!")
             return ["ERROR"]
     except Exception as e:
-        print_with_color(f"ERROR: an exception occurs while parsing the model response: {e}", "red")
-        print_with_color(rsp, "red")
+        logger.error(f"ERROR: an exception occurs while parsing the model response in parse_reflect_rsp: {e}")
+        logger.error(rsp)
         return ["ERROR"]
