@@ -13,6 +13,7 @@ from device_controller import list_all_devices, DeviceController
 from utils import traverse_tree
 from model import parse_explore_rsp, parse_grid_rsp, OpenAIModel, GeminiModel
 from utils import print_with_color, draw_bbox_multi, draw_grid, area_to_xy, calculate_image_similarity
+from logging_controller import get_logger
 
 arg_desc = "AppAgent Executor"
 parser = argparse.ArgumentParser(formatter_class=argparse.RawDescriptionHelpFormatter, description=arg_desc)
@@ -24,6 +25,12 @@ try:
     configs = load_config()
 except Exception as e:
     print_with_color(f"ERROR: Failed to load configuration: {e}", "red")
+    sys.exit(1)
+
+try:
+    logger = get_logger()
+except Exception as e:
+    print_with_color(f"ERROR: Failed to load logger configuration: {e}", "red")
     sys.exit(1)
 
 try:

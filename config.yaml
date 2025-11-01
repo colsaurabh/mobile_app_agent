@@ -28,12 +28,13 @@ MIN_DIST: 10  # The minimum distance between elements to prevent overlapping dur
 GRID_SIZE: 35 # 40 being a good grid size
 
 # Add these to config.yaml
-PLATFORM: "android"  # or "ios"
+PLATFORM: "android"  # "android" or "ios"
 
 # iOS-specific settings (optional)
 IOS_DEVICE_NAME: "Saurabh iPhone"
 IOS_PLATFORM_VERSION: "26.0.1"
 IOS_BUNDLE_ID: "com.ltfs.d2cApp"  # Optional
+# IOS_BUNDLE_ID: "com.google.chrome.ios"
 IOS_AUTO_LAUNCH: false
 APPIUM_SERVER: "http://localhost:4723"
 IOS_DEVICES: []  # List of iOS device UDIDs, or leave empty for auto-detection
@@ -44,3 +45,5 @@ VOICE_SPEED: 185 # e.g. "170" (words per minute)
 
 ALWAYS_GRID: true
 DISABLE_XML: false
+
+LOG_MODE: "dev"  # "dev" or "prod"
