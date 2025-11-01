@@ -106,60 +106,13 @@ class IOSController:
             print_with_color(f"Failed to tap: {e}", "red")
             return "ERROR"
 
-
-
-
-
-
-
-
-
-
-    
-    def text(self, input_str, clear_first=False):
+    def text(self, input_str):
         """Input text on iOS device."""
         try:
-            end_time = time.time() + 5
-            while time.time() < end_time:
-                try:
-                    # Find normal text fields
-                    tfs = self.driver.find_elements(AppiumBy.IOS_CLASS_CHAIN, '**/XCUIElementTypeTextField')
-                    if not tfs:
-                        # Fallback to secure (password) fields
-                        tfs = self.driver.find_elements(AppiumBy.IOS_CLASS_CHAIN, '**/XCUIElementTypeSecureTextField')
-                    if tfs:
-                        el = tfs[0]
-                        try:
-                            el.click()
-                        except Exception:
-                            pass
-                        time.sleep(0.4)
-                        if clear_first:
-                            try:
-                                el.clear()
-                            except Exception:
-                                pass
-                        el.send_keys(input_str)
-                        return "OK"
-                except Exception as e:
-                    pass
-                time.sleep(0.4)
-            return "ERROR"
-        except Exception as e:
-            print_with_color(f"Failed to input text: {e}", "red")
-            return "ERROR"
-    
-    def long_press(self, x, y, duration=1000):
-        """Long press at coordinates (x, y) on iOS device."""
-        try:
-            self.driver.execute_script("mobile: touchAndHold", {
-                "x": x,
-                "y": y,
-                "duration": duration / 1000.0  # Convert to seconds
-            })
+            self.driver.execute_script("mobile: keys", {"keys": list(input_str)})
             return "OK"
         except Exception as e:
-            print_with_color(f"Failed to long press: {e}", "red")
+            print_with_color(f"Failed to input text: {e}", "red")
             return "ERROR"
     
     def swipe(self, x, y, direction, dist="medium", quick=False):
@@ -182,8 +135,13 @@ class IOSController:
             else:
                 return "ERROR"
             
+            # self.driver.execute_script("mobile: swipe", {
+            #     "direction": "up",
+            #     "velocity": 500
+            # })
+
             duration_sec = (200 if quick else 400) / 1000.0
-            self.driver.execute_script("mobile: swipe", {
+            self.driver.execute_script("mobile: dragFromToForDuration", {
                 "fromX": x,
                 "fromY": y,
                 "toX": x + offset_x,
@@ -201,16 +159,29 @@ class IOSController:
             start_x, start_y = start
             end_x, end_y = end
             duration_sec = duration / 1000.0
-            self.driver.execute_script("mobile: swipe", {
+            self.driver.execute_script("mobile: dragFromToForDuration", {
                 "fromX": start_x,
                 "fromY": start_y,
                 "toX": end_x,
                 "toY": end_y,
-                "duration": duration_sec
+                "duration": duration_sec,
             })
             return "OK"
         except Exception as e:
             print_with_color(f"Failed to swipe precise: {e}", "red")
+            return "ERROR"
+
+    def long_press(self, x, y, duration=5000):
+        """Long press at coordinates (x, y) on iOS device."""
+        try:
+            self.driver.execute_script("mobile: touchAndHold", {
+                "x": x,
+                "y": y,
+                "duration": duration / 1000.0  # Convert to seconds
+            })
+            return "OK"
+        except Exception as e:
+            print_with_color(f"Failed to long press: {e}", "red")
             return "ERROR"
 
     def back(self):
@@ -251,34 +222,3 @@ class IOSController:
 #         self.bbox = bbox
 #         self.attrib = attrib
 # ```
-
-# Usage example:
-
-# ```python
-# # Old way (still works)
-# from scripts.and_controller import AndroidController, list_all_devices
-
-# # New way (recommended)
-# from scripts.device_controller import DeviceController, list_all_devices
-
-# # Use generic controller - automatically selects Android or iOS
-# devices = list_all_devices()
-# controller = DeviceController(device=devices[0], platform="android")  # or "ios"
-
-# # All methods work the same way
-# width, height = controller.get_device_size()
-# controller.tap(x, y)
-# controller.text("Hello")
-# controller.swipe(x, y, "up", "medium")
-# ```
-
-# Summary:
-# - `device_controller.py` — generic interface
-# - `android_controller.py` — Android implementation (from your original code)
-# - `ios_controller.py` — iOS implementation (using Appium)
-# - `and_controller.py` — backward compatibility wrapper
-
-# The generic controller handles platform selection and delegates to the appropriate implementation.
-
-# Note: You're in ask mode, so I can't apply these changes. Switch to agent mode if you want me to create these files, or copy and apply them manually.
-
