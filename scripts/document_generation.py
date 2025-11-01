@@ -9,7 +9,7 @@ import time
 import prompts
 from config import load_config
 from model import OpenAIModel, GeminiModel
-from print_controller import print_with_color
+from logging_controller import print_with_color
 
 arg_desc = "AppAgent - Human Demonstration"
 parser = argparse.ArgumentParser(formatter_class=argparse.RawDescriptionHelpFormatter, description=arg_desc)

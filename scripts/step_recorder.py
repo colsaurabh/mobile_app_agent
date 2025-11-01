@@ -11,7 +11,7 @@ from device_controller import list_all_devices, DeviceController
 from utils import traverse_tree
 from config import load_config
 from utils import draw_bbox_multi
-from print_controller import print_with_color
+from logging_controller import print_with_color
 
 arg_desc = "AppAgent - Human Demonstration"
 parser = argparse.ArgumentParser(formatter_class=argparse.RawDescriptionHelpFormatter, description=arg_desc)

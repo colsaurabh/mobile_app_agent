@@ -1,7 +1,8 @@
 import argparse
 import os
+import sys
 
-from scripts.print_controller import print_with_color
+from scripts.logging_controller import get_logger
 
 arg_desc = "AppAgent - deployment phase"
 parser = argparse.ArgumentParser(formatter_class=argparse.RawDescriptionHelpFormatter, description=arg_desc)
@@ -12,15 +13,21 @@ args = vars(parser.parse_args())
 app = args["app"]
 root_dir = args["root_dir"]
 
-print_with_color("Welcome to the deployment phase of AppAgent", "yellow")
-# print_with_color("Welcome to the deployment phase of AppAgent!\nBefore giving me the task, you should first tell me "
+try:
+    logger = get_logger()
+except Exception as e:
+    print(f"ERROR: Failed to load logger configuration: {e}")
+    sys.exit(1)
+
+logger.show("Welcome to the deployment phase of AppAgent")
+# logger.show("Welcome to the deployment phase of AppAgent!\nBefore giving me the task, you should first tell me "
 #                  "the name of the app you want me to operate and what documentation base you want me to use. I will "
 #                  "try my best to complete the task without your intervention. First, please enter the main interface "
-#                  "of the app on your phone and provide the following information.", "yellow")
+#                  "of the app on your phone and provide the following information.")
 
 if not app:
     # ToDo: Saurabh. Change later to different apps too.
-    # print_with_color("What is the name of the target app?", "blue")
+    # logger.show("What is the name of the target app?")
     # app = input()
     app = "planet"
     app = app.replace(" ", "")

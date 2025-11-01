@@ -3,7 +3,7 @@ import datetime
 import os
 import time
 
-from scripts.print_controller import print_with_color
+from scripts.logging_controller import print_with_color
 
 arg_desc = "AppAgent - exploration phase"
 parser = argparse.ArgumentParser(formatter_class=argparse.RawDescriptionHelpFormatter, description=arg_desc)

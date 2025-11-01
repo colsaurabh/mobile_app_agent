@@ -12,7 +12,7 @@ from config import load_config
 from device_controller import list_all_devices, DeviceController
 from model import parse_explore_rsp, parse_reflect_rsp, OpenAIModel, GeminiModel
 from utils import draw_bbox_multi
-from print_controller import print_with_color
+from logging_controller import print_with_color
 
 arg_desc = "AppAgent - Autonomous Exploration"
 parser = argparse.ArgumentParser(formatter_class=argparse.RawDescriptionHelpFormatter, description=arg_desc)

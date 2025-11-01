@@ -2,7 +2,7 @@ import os
 import subprocess
 
 from config import load_config
-from print_controller import print_with_color
+from logging_controller import print_with_color
 
 
 configs = load_config()
