@@ -124,8 +124,25 @@ def encode_image(image_path, max_width=800, quality=75):
             if img.width > max_width:
                 ratio = max_width / float(img.width)
                 new_height = int(float(img.height) * ratio)
-                img = img.resize((max_width, new_height), Image.ANTIALIAS)
+                try:
+                    resample = Image.Resampling.LANCZOS
+                except AttributeError:
+                    # Fallback for older Pillow versions
+                    resample = Image.LANCZOS if hasattr(Image, 'LANCZOS') else Image.ANTIALIAS
+                img = img.resize((max_width, new_height), resample)
+                # img = img.resize((max_width, new_height), Image.ANTIALIAS)
             # Save to bytes buffer with lower quality
+            # Convert to RGB if necessary (some PNGs have RGBA which JPEG doesn't support)
+            if img.mode in ('RGBA', 'LA', 'P'):
+                # Create a white background
+                background = Image.new('RGB', img.size, (255, 255, 255))
+                if img.mode == 'P':
+                    img = img.convert('RGBA')
+                background.paste(img, mask=img.split()[-1] if img.mode in ('RGBA', 'LA') else None)
+                img = background
+            elif img.mode != 'RGB':
+                img = img.convert('RGB')
+
             buffered = io.BytesIO()
             img.save(buffered, format="JPEG", quality=quality)
             # Encode base64 string

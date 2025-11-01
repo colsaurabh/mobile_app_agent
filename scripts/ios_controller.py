@@ -21,6 +21,7 @@ class IOSController:
         """List all connected iOS devices."""
         # This would typically use 'xcrun xctrace list devices' or similar
         # For now, return devices from config or allow manual specification
+        # Saurabh: ToDo: Correct this. Take it from device connected.
         ios_devices = configs.get("IOS_DEVICES", [])
         if isinstance(ios_devices, list):
             return ios_devices
@@ -87,7 +88,25 @@ class IOSController:
         except Exception as e:
             print_with_color(f"Failed to get XML: {e}", "red")
             return "ERROR"
-    
+
+    def tap(self, x, y):
+        """Tap at coordinates (x, y) on iOS device."""
+        try:
+            self.driver.execute_script("mobile: tap", {"x": x, "y": y})
+            return "OK"
+        except Exception as e:
+            print_with_color(f"Failed to tap: {e}", "red")
+            return "ERROR"
+
+
+
+
+
+
+
+
+
+
     def back(self):
         """Send iOS back action (if available) or swipe from left edge."""
         try:
@@ -102,15 +121,6 @@ class IOSController:
             return "OK"
         except Exception as e:
             print_with_color(f"Failed to execute back: {e}", "red")
-            return "ERROR"
-    
-    def tap(self, x, y):
-        """Tap at coordinates (x, y) on iOS device."""
-        try:
-            self.driver.execute_script("mobile: tap", {"x": x, "y": y})
-            return "OK"
-        except Exception as e:
-            print_with_color(f"Failed to tap: {e}", "red")
             return "ERROR"
     
     def text(self, input_str, clear_first=False):
@@ -218,21 +228,6 @@ class IOSController:
             except:
                 pass
 
-
-# Update your `config.yaml` to support iOS:
-
-# ```yaml
-# # Add these to config.yaml
-# PLATFORM: "android"  # or "ios"
-
-# # iOS-specific settings (optional)
-# IOS_DEVICE_NAME: "Saurabh iPhone"
-# IOS_PLATFORM_VERSION: "26.0.1"
-# IOS_BUNDLE_ID: "com.ltfs.d2cApp"  # Optional
-# IOS_AUTO_LAUNCH: false
-# APPIUM_SERVER: "http://localhost:4723"
-# IOS_DEVICES: []  # List of iOS device UDIDs, or leave empty for auto-detection
-# ```
 
 # Then update `scripts/and_controller.py` to maintain backward compatibility:
 
