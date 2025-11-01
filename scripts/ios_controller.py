@@ -5,13 +5,18 @@ import os
 import time
 from appium import webdriver
 from appium.options.ios import XCUITestOptions
-from appium.webdriver.common.appiumby import AppiumBy
+import sys
+from logging_controller import get_logger
 
 from config import load_config
-from print_controller import print_with_color
 
 configs = load_config()
 
+try:
+    logger = get_logger()
+except Exception as e:
+    print(f"ERROR: Failed to load logger configuration: {e}")
+    sys.exit(1)
 
 class IOSController:
     """iOS device controller using Appium."""
@@ -62,7 +67,7 @@ class IOSController:
             self.driver = webdriver.Remote(appium_server, options=options)
             time.sleep(2)  # Wait for connection
         except Exception as e:
-            print_with_color(f"Failed to initialize iOS driver: {e}", "red")
+            logger.error(f"Failed to initialize iOS driver: {e}")
             raise
     
     def get_device_size(self):
@@ -71,7 +76,7 @@ class IOSController:
             window_size = self.driver.get_window_size()
             return window_size['width'], window_size['height']
         except Exception as e:
-            print_with_color(f"Failed to get device size: {e}", "red")
+            logger.error(f"Failed to get device size: {e}")
             return 0, 0
     
     def get_screenshot(self, prefix, save_dir):
@@ -81,7 +86,7 @@ class IOSController:
             self.driver.save_screenshot(screenshot_path)
             return screenshot_path
         except Exception as e:
-            print_with_color(f"Failed to capture screenshot: {e}", "red")
+            logger.error(f"Failed to capture screenshot: {e}")
             return "ERROR"
     
     def get_xml(self, prefix, save_dir):
@@ -94,7 +99,7 @@ class IOSController:
                 f.write(source)
             return xml_path
         except Exception as e:
-            print_with_color(f"Failed to get XML: {e}", "red")
+            logger.error(f"Failed to get XML: {e}")
             return "ERROR"
 
     def tap(self, x, y):
@@ -103,7 +108,7 @@ class IOSController:
             self.driver.execute_script("mobile: tap", {"x": x, "y": y})
             return "OK"
         except Exception as e:
-            print_with_color(f"Failed to tap: {e}", "red")
+            logger.error(f"Failed to tap: {e}")
             return "ERROR"
 
     def text(self, input_str):
@@ -112,7 +117,7 @@ class IOSController:
             self.driver.execute_script("mobile: keys", {"keys": list(input_str)})
             return "OK"
         except Exception as e:
-            print_with_color(f"Failed to input text: {e}", "red")
+            logger.error(f"Failed to input text: {e}")
             return "ERROR"
     
     def swipe(self, x, y, direction, dist="medium", quick=False):
@@ -150,7 +155,7 @@ class IOSController:
             })
             return "OK"
         except Exception as e:
-            print_with_color(f"Failed to swipe: {e}", "red")
+            logger.error(f"Failed to swipe: {e}")
             return "ERROR"
     
     def swipe_precise(self, start, end, duration=400):
@@ -168,7 +173,7 @@ class IOSController:
             })
             return "OK"
         except Exception as e:
-            print_with_color(f"Failed to swipe precise: {e}", "red")
+            logger.error(f"Failed to swipe precise: {e}")
             return "ERROR"
 
     def long_press(self, x, y, duration=5000):
@@ -181,7 +186,7 @@ class IOSController:
             })
             return "OK"
         except Exception as e:
-            print_with_color(f"Failed to long press: {e}", "red")
+            logger.error(f"Failed to long press: {e}")
             return "ERROR"
 
     def back(self):
@@ -197,7 +202,7 @@ class IOSController:
             })
             return "OK"
         except Exception as e:
-            print_with_color(f"Failed to execute back: {e}", "red")
+            logger.error(f"Failed to execute back: {e}")
             return "ERROR"
     
 

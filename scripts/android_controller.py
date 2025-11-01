@@ -3,11 +3,18 @@ Android-specific device controller implementation using ADB.
 """
 import os
 import subprocess
+import sys
 
 from config import load_config
-from print_controller import print_with_color
+from logging_controller import get_logger
 
 configs = load_config()
+
+try:
+    logger = get_logger()
+except Exception as e:
+    print(f"ERROR: Failed to load logger configuration: {e}")
+    sys.exit(1)
 
 
 def execute_adb(adb_command):
@@ -15,8 +22,8 @@ def execute_adb(adb_command):
     result = subprocess.run(adb_command, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
     if result.returncode == 0:
         return result.stdout.strip()
-    print_with_color(f"Command execution failed: {adb_command}", "red")
-    print_with_color(result.stderr, "red")
+    logger.error(f"Command execution failed: {adb_command}")
+    logger.error(result.stderr)
     return "ERROR"
 
 
@@ -124,8 +131,6 @@ class AndroidController:
             offset = unit_dist, 0
         else:
             return "ERROR"
-        print("x and x+its offset ", x, x+offset[0])
-        print("y and y+its offset ", y, y+offset[1])
         duration = 200 if quick else 400
         adb_command = f"adb -s {self.device} shell input swipe {x} {y} {x+offset[0]} {y+offset[1]} {duration}"
         ret = execute_adb(adb_command)
