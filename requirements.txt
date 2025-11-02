@@ -11,3 +11,4 @@ google-genai
 # Keras/TensorFlow are unused; remove to avoid version mismatch warnings
 soundfile
 scikit-image
+pynput

@@ -177,6 +177,32 @@ human_answer_context = ""
 previous_screenshot_path = None
 current_screenshot_path = None
 
+human_override_triggered = False
+human_override_context = ""
+
+human_override = configs.get("ENABLE_HUMAN_OVERRIDE", False)
+if human_override:
+    import threading
+    from pynput import keyboard
+    def on_press(key):
+        """Trigger human override when human_override_key is pressed."""
+        global human_override_triggered
+        try:
+            human_override_key = configs.get("HUMAN_OVERRIDE_KEY", "|")
+            if hasattr(key, 'char') and key.char == human_override_key:
+                human_override_triggered = True
+                logger.debug(f"Human override triggered via '{human_override_key}' key.")
+        except Exception:
+            pass
+
+    def listen_for_human_key():
+        """Background listener for key press."""
+        with keyboard.Listener(on_press=on_press) as listener:
+            listener.join()
+
+    key_thread = threading.Thread(target=listen_for_human_key, daemon=True)
+    key_thread.start()
+
 while round_count < configs["MAX_ROUNDS"]:
     round_count += 1
     logger.info(f"Round {round_count}")
@@ -198,6 +224,11 @@ while round_count < configs["MAX_ROUNDS"]:
         human_answer_context = f"You previously asked a question {pending_question} and the human responded with: '{pending_human_input}'. Use this information for your next action."
         pending_human_input = None
         pending_question = None
+
+    if human_override_triggered:
+        logger.debug("Human intervention triggered via human_override_triggered")
+        human_override_context = f"VERY IMPORTANT: Human intervention triggered. You should leave the current action and ask human for the next action. Question to ask: **What should I do next?**"
+        human_override_triggered = False
 
     if grid_on:
         rows, cols = draw_grid(screenshot_path, os.path.join(task_dir, f"{dir_name}_{round_count}_grid.png"))
@@ -287,6 +318,11 @@ while round_count < configs["MAX_ROUNDS"]:
     prompt = re.sub(r"<last_act>", last_act, prompt)
     prompt = re.sub(r"<human_answer_context>", human_answer_context, prompt)
     prompt = re.sub(r"<recovery_context>", special_action_context, prompt)
+
+    if human_override_context:
+        logger.debug("Human intervention sending to llm prompt")
+        prompt = re.sub(r"<human_override_context>", human_override_context, prompt)
+        human_override_context = ""
 
     try:
         logger.info("Thinking about what to do in the next step...")

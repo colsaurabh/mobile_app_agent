@@ -27,6 +27,8 @@ DARK_MODE: false  # Set this to true if your app is in dark mode to enhance the 
 MIN_DIST: 10  # The minimum distance between elements to prevent overlapping during the labeling process
 GRID_SIZE: 35 # 40 being a good grid size
 USE_SIMILARITY_COMPARISION: true
+ENABLE_HUMAN_OVERRIDE: false
+HUMAN_OVERRIDE_KEY: "|"
 
 # Add these to config.yaml
 PLATFORM: "android"  # "android" or "ios"

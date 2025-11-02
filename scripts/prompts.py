@@ -44,6 +44,8 @@ task_template = """You are an agent that is trained to perform some basic tasks 
 smartphone screenshot. The interactive UI elements on the screenshot are labeled with numeric tags starting from 1. The 
 numeric tag of each interactive element is located in the center of the element.
 
+<human_override_context>
+
 <human_answer_context>
 
 <recovery_context>
@@ -184,6 +186,8 @@ You can only take one action at a time, so please directly call the function."""
 task_template_grid = """You are an agent that is trained to perform some basic tasks on a smartphone. You will be given 
 a smartphone screenshot overlaid by a grid. The grid divides the screenshot into small square areas. Each area is 
 labeled with an integer in the top-left corner.
+
+<human_override_context>
 
 <human_answer_context>
 
@@ -518,3 +522,12 @@ Documentation: <describe the function of the UI element>
 # - **Identify if there is a checkbox (usually on the left side).**
 # - **Tap on the checkbox area, not the text.**
 # - **Continue only once you see a tick/check mark appear next to the text.**
+
+# **Existing Text Replacement Rule (must follow):**
+# - If the input box already contains some text (e.g., a prefilled value, placeholder, or previously entered data):
+#     1. Perform a long_press(area, "center") on that field to bring up text options (like "Select All" or "Paste").
+#     2. Choose "Select All" if visible; otherwise, perform a second long_press to ensure the text is selected.
+#     3. Once the old text is selected, type the new value using text("...").
+#     4. If "Select All" or "Cut" is not clearly visible, proceed with a normal text entry only after ensuring the cursor is active.
+# - Never append new text to existing input unless explicitly told by the human.
+# - Always ensure that the keyboard is visible before replacing or entering text.
