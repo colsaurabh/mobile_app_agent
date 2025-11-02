@@ -123,10 +123,13 @@ try:
     
     if len(device_list) == 1:
         device = device_list[0]
-        # logger.info(f"Device selected: {device}")
+    elif len(device_list) > 1:
+        device_list = configs.get("ANDROID_DEVICES", ["10BE8N1N5200203"])
+        device = device_list[0]
     else:
         logger.show("Please choose the Android device to start demo by entering its ID")
         device = input()
+    logger.debug(f"Device selected: {device}")
     
     controller = DeviceController(device)
     width, height = controller.get_device_size()

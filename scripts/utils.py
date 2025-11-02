@@ -345,6 +345,7 @@ def speak(text: str):
             cmd += [text]
             subprocess.run(cmd, check=False)
     except Exception:
+        logger.error(f"ERROR: In speaking as exception {e}")
         pass
 
 def _record_wav_tmp(seconds=12, samplerate=16000, channels=1):

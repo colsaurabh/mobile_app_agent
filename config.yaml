@@ -30,6 +30,8 @@ GRID_SIZE: 35 # 40 being a good grid size
 # Add these to config.yaml
 PLATFORM: "android"  # "android" or "ios"
 
+ANDROID_DEVICES: ["10BE8N1N5200203"]  # List of android device UDIDs
+
 # iOS-specific settings (optional)
 IOS_DEVICE_NAME: "Saurabh iPhone"
 IOS_PLATFORM_VERSION: "26.0.1"
@@ -37,13 +39,13 @@ IOS_BUNDLE_ID: "com.ltfs.d2cApp"  # Optional
 # IOS_BUNDLE_ID: "com.google.chrome.ios"
 IOS_AUTO_LAUNCH: false
 APPIUM_SERVER: "http://localhost:4723"
-IOS_DEVICES: []  # List of iOS device UDIDs, or leave empty for auto-detection
+IOS_DEVICES: ["00008130-001268D80EBA001C"]  # List of iOS device UDIDs, or leave empty for auto-detection
 
 ENABLE_VOICE: false
 VOICE_TYPE: "Veena" # e.g. "Samantha", "Alex", "Ava", "Victoria", "Veena", "Rishi"
-VOICE_SPEED: 185 # e.g. "170" (words per minute)
+VOICE_SPEED: "185" # e.g. "170" (words per minute)
 
 ALWAYS_GRID: true
 DISABLE_XML: false
 
-LOG_MODE: "dev"  # "dev" or "prod"
+LOG_MODE: "dev"  # "dev" or "stage" or "prod"
