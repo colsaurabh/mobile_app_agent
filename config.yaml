@@ -26,6 +26,7 @@ MAX_ROUNDS: 100  # Set the round limit for the agent to complete the task
 DARK_MODE: false  # Set this to true if your app is in dark mode to enhance the element labeling
 MIN_DIST: 10  # The minimum distance between elements to prevent overlapping during the labeling process
 GRID_SIZE: 35 # 40 being a good grid size
+USE_SIMILARITY_COMPARISION: true
 
 # Add these to config.yaml
 PLATFORM: "android"  # "android" or "ios"
