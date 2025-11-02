@@ -168,6 +168,8 @@ disable_xml = configs.get("DISABLE_XML", False)
 
 pending_human_input = None
 pending_question = None
+special_action_used = False
+special_action_context = ""
 
 # This variable will hold the user's answer from the previous round
 human_answer_context = ""
@@ -264,17 +266,27 @@ while round_count < configs["MAX_ROUNDS"]:
             ui_doc = ""
             prompt = re.sub(r"<ui_document>", ui_doc, prompts.task_template)
 
-    # current_screenshot_path = image
-    # similarity_score = calculate_image_similarity(previous_screenshot_path, current_screenshot_path)
-    # previous_screenshot_path = current_screenshot_path
-    # if similarity_score < 0.9:
-    #     logger.debug(f"Similarity score is {(similarity_score * 100):.2f}%")
-    # else:
-    #     logger.debug(f"Similarity score is {(similarity_score * 100):.2f}%")
+    use_similarity = configs.get("USE_SIMILARITY_COMPARISION", True)
+    if use_similarity:
+        current_screenshot_path = image
+        similarity_score = calculate_image_similarity(previous_screenshot_path, current_screenshot_path)
+        if similarity_score > 0.99:
+            if not special_action_used:
+                logger.debug(f"Screen unchanged; taking special recovery action (swipe up). Score is: {(similarity_score * 100):.2f}%")
+                special_action_used = True
+                special_action_context = "The previous action did not change the screen. Its imp to swipe up the screen from middle to see data before continuing \n"
+            else:
+                logger.debug(f"High similarity detected again but special_action_used already true. Score is: {(similarity_score * 100):.2f}%")
+        else:
+            logger.debug(f"Similarity score low and resetting special_action_used. Score is: {(similarity_score * 100):.2f}%")
+            special_action_used = False
+            special_action_context = ""
+        previous_screenshot_path = current_screenshot_path
 
     prompt = re.sub(r"<task_description>", task_desc, prompt)
     prompt = re.sub(r"<last_act>", last_act, prompt)
     prompt = re.sub(r"<human_answer_context>", human_answer_context, prompt)
+    prompt = re.sub(r"<recovery_context>", special_action_context, prompt)
 
     try:
         logger.info("Thinking about what to do in the next step...")

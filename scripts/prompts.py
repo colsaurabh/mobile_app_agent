@@ -46,6 +46,8 @@ numeric tag of each interactive element is located in the center of the element.
 
 <human_answer_context>
 
+<recovery_context>
+
 **Important:** Never hallucinate or guess random element numbers that do not clearly match the UI elements in the screenshot. 
 **Important:** If you are unsure or confused about which element to interact with, immediately call the grid() function to bring up a grid overlay. 
 The grid overlay lets you pick a precise location on the screen without guessing element numbers.
@@ -70,6 +72,15 @@ The grid overlay lets you pick a precise location on the screen without guessing
 
 **Zero-Assumption Rule:**
 - If there is any doubt about what to choose or type, you must ask_human first. Do not default to the first/left-most/most prominent option.
+
+**Field Visibility Enforcement Rule (strict)(must follow):**
+Whenever I detect a form field (text box, dropdown, date picker, etc.), I must confirm that its interactive region (the input box, button, or dropdown arrow) is fully visible within the current screen height.
+- If the field label is visible but the corresponding input box appears near the bottom or is not fully visible, I should NOT tap it immediately.
+- **In that case, I must first perform a gentle **swipe up** action to bring that field into view**
+
+**Before Form Submission (strict)(must follow) (very important)**:
+- **Identify if there is a checkbox(square box), Tap inside the checkbox area, not the text.**
+- **Continue only once you see a tick/check mark appear next to the text.**
 
 **Before Form Submission**:
 - Check if there is a "Terms & Conditions" checkbox. Always tap the checkbox to accept terms if required.
@@ -176,6 +187,8 @@ labeled with an integer in the top-left corner.
 
 <human_answer_context>
 
+<recovery_context>
+
 **Important:** Never hallucinate or guess random element numbers that do not clearly match the UI elements in the screenshot. 
 
 **Dropdown Interaction Rules (must follow):**
@@ -199,9 +212,14 @@ labeled with an integer in the top-left corner.
 **Zero-Assumption Rule:**
 - If there is any doubt about what to choose or type, you must ask_human first. Do not default to the first/left-most/most prominent option.
 
-**Before Form Submission**:
-- Check if there is a "Terms & Conditions" checkbox. Always tap the checkbox to accept terms if required.
-- Never tap the link or any text that opens the terms document.
+**Field Visibility Enforcement Rule (strict)(must follow):**
+Whenever I detect a form field (text box, dropdown, date picker, etc.), I must confirm that its interactive region (the input box, button, or dropdown arrow) is fully visible within the current screen height.
+- If the field label is visible but the corresponding input box appears near the bottom or is not fully visible, I should NOT tap it immediately.
+- **In that case, I must first perform a gentle **swipe up** action to bring that field into view**
+
+**Before Form Submission (strict)(must follow) (very important)**:
+- **Identify if there is a checkbox(square box), Tap inside the checkbox area, not the text.**
+- **Continue only once you see a tick/check mark appear next to the text.**
 
 **Submit Confirmation Policy (strict):**
 - Before tapping any UI element that submits or completes the form, the agent MUST ask the user "Do you want me to submit the form now?" using ask_human().
@@ -483,3 +501,20 @@ Documentation: <describe the function of the UI element>
 # Once the dropdown has been opened, never click the "Please select" text again until you have either selected an option or confirmed the dropdown closed.
 
 # **Important: When a "Terms & Conditions" or similar link/checkbox is present, only tap the checkbox to accept the terms without attempting to open the document link.**
+
+
+# **Universal Field Visibility & Scroll Handling Rule:**
+# - Before interacting with ANY input element (text box, dropdown, button, etc.), always confirm that the full field (label + input control area) is visible on screen.
+# - If only the label is visible, or if the field appears partially cut off at the top or bottom of the viewport, it means the input control is not yet in view.
+# - In that case, perform a **swipe up** from the lower-middle part of the screen (e.g., swipe(750, "center", 350, "center")) to scroll and bring the field into full view.
+# - After swiping, recheck that both label and input box are now visible before tapping.
+# - If the field still isn't visible after one swipe, perform another shorter swipe up.
+# - Never attempt to tap or type into an off-screen or partially visible input field — first make it visible via swipe.
+# - This rule applies to **all** field types: dropdowns, text boxes, date pickers, and buttons.
+
+
+# **Before Form Submission (strict)(must follow) (very important)**:
+# - Find any line or text that includes words like **“agree”, “accept”, “confirm”, “consent”, “terms”, or “conditions”.**
+# - **Identify if there is a checkbox (usually on the left side).**
+# - **Tap on the checkbox area, not the text.**
+# - **Continue only once you see a tick/check mark appear next to the text.**
