@@ -145,14 +145,14 @@ if configs.get("ENABLE_VOICE", False):
     from utils import voice_ask
     try:
         task_desc = voice_ask(
-            "Please enter the description of the task to perform.",
+            "How can i help you",
             max_seconds=5
         )
     except Exception:
-        logger.show("Please enter the description of the task to perform.")
+        logger.show("How can i help you?")
         task_desc = input()
 else:
-    logger.show("Please enter the description of the task to perform.")
+    logger.show("How can i help you?")
     task_desc = input()
 
 round_count = 0
