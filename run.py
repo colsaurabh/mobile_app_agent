@@ -2,6 +2,9 @@ import argparse
 import os
 import sys
 
+import subprocess
+from config import load_config
+
 from scripts.logging_controller import get_logger
 
 arg_desc = "AppAgent - deployment phase"
@@ -19,7 +22,33 @@ except Exception as e:
     print(f"ERROR: Failed to load logger configuration: {e}")
     sys.exit(1)
 
-logger.show("Welcome to the deployment phase of AppAgent")
+try:
+    configs = load_config()
+except Exception as e:
+    logger.error(f"ERROR: Failed to load configuration: {e}")
+    sys.exit(1)
+
+def temp_speak(text: str):
+    try:
+        if sys.platform == "darwin":
+            voice = configs.get("VOICE_TYPE", "Veena")
+            rate = configs.get("VOICE_SPEED", 170)
+            cmd = ["say"]
+            if voice:
+                cmd += ["-v", voice]
+            if rate:
+                cmd += ["-r", rate]
+            cmd += [text]
+            subprocess.run(cmd, check=False)
+    except Exception:
+        logger.error(f"ERROR: In speaking as exception {e}")
+        pass
+
+logger.show("Welcome to the mobile agent of L&T Finace")
+if configs.get("ENABLE_VOICE", False):
+    temp_speak("Welcome to the mobile agent of L&T Finace")
+    
+
 # logger.show("Welcome to the deployment phase of AppAgent!\nBefore giving me the task, you should first tell me "
 #                  "the name of the app you want me to operate and what documentation base you want me to use. I will "
 #                  "try my best to complete the task without your intervention. First, please enter the main interface "

@@ -59,31 +59,76 @@ def area_to_xy(area, subarea, height, width, rows, cols):
         x, y = x_0 + (width // cols) // 2, y_0 + (height // rows) // 2
     return x, y
 
+# Just backup of older function
+# def draw_grid(img_path, output_path, rows=None, cols=None, min_cell_px=40):
+#     """
+#     Draw a grid on the image.
+#     - If rows/cols are provided, they are used directly.
+#     - Otherwise, grid density is derived from min_cell_px (smaller => more cells).
+#     """
+#     try:
+#         def clamp(n, lo, hi):
+#             return max(lo, min(hi, n))
+
+#         min_cell_px = configs.get("GRID_SIZE", 40)
+
+#         image = cv2.imread(img_path)
+#         height, width, _ = image.shape
+#         color = (255, 116, 113)
+
+#         if rows is None or cols is None:
+#             # Derive rows/cols from desired minimum cell size
+#             rows = clamp(height // min_cell_px, 1, 100)
+#             cols = clamp(width // min_cell_px, 1, 100)
+
+#         # Compute actual cell size from rows/cols
+#         unit_height = max(1, height // rows)
+#         unit_width = max(1, width // cols)
+#         thick = max(1, int(max(unit_width, unit_height) // 50))
+
+#         for i in range(rows):
+#             for j in range(cols):
+#                 label = i * cols + j + 1
+#                 left = int(j * unit_width)
+#                 top = int(i * unit_height)
+#                 right = int((j + 1) * unit_width)
+#                 bottom = int((i + 1) * unit_height)
+#                 cv2.rectangle(image, (left, top), (right, bottom), color, thick // 2)
+#                 cv2.putText(image, str(label),
+#                             (left + int(unit_width * 0.05), top + int(unit_height * 0.3)),
+#                             0, max(0.5, 0.01 * unit_width), color, thick)
+#         cv2.imwrite(output_path, image)
+#         return rows, cols
+#     except Exception as e:
+#         logger.error(f"ERROR in draw_grid: {e}")
+#         return 0, 0
+
 def draw_grid(img_path, output_path, rows=None, cols=None, min_cell_px=40):
     """
     Draw a grid on the image.
-    - If rows/cols are provided, they are used directly.
-    - Otherwise, grid density is derived from min_cell_px (smaller => more cells).
+    - Dynamically skips numbering of leftmost and rightmost grid columns (device independent).
     """
     try:
         def clamp(n, lo, hi):
             return max(lo, min(hi, n))
 
         min_cell_px = configs.get("GRID_SIZE", 40)
-
         image = cv2.imread(img_path)
         height, width, _ = image.shape
         color = (255, 116, 113)
 
         if rows is None or cols is None:
-            # Derive rows/cols from desired minimum cell size
             rows = clamp(height // min_cell_px, 1, 100)
             cols = clamp(width // min_cell_px, 1, 100)
 
-        # Compute actual cell size from rows/cols
         unit_height = max(1, height // rows)
         unit_width = max(1, width // cols)
         thick = max(1, int(max(unit_width, unit_height) // 50))
+
+        # Define margin thresholds (percentage-based, so device-independent)
+        margin_threshold = 0.05  # 5% of width on each side
+        left_margin_limit = int(width * margin_threshold)
+        right_margin_limit = int(width * (1 - margin_threshold))
 
         for i in range(rows):
             for j in range(cols):
@@ -92,10 +137,22 @@ def draw_grid(img_path, output_path, rows=None, cols=None, min_cell_px=40):
                 top = int(i * unit_height)
                 right = int((j + 1) * unit_width)
                 bottom = int((i + 1) * unit_height)
+                center_x = (left + right) // 2
+
                 cv2.rectangle(image, (left, top), (right, bottom), color, thick // 2)
-                cv2.putText(image, str(label),
-                            (left + int(unit_width * 0.05), top + int(unit_height * 0.3)),
-                            0, max(0.5, 0.01 * unit_width), color, thick)
+
+                # Skip numbering if near left or right 5% margins
+                if left_margin_limit < center_x < right_margin_limit:
+                    cv2.putText(
+                        image,
+                        str(label),
+                        (left + int(unit_width * 0.05), top + int(unit_height * 0.3)),
+                        0,
+                        max(0.5, 0.01 * unit_width),
+                        color,
+                        thick,
+                    )
+
         cv2.imwrite(output_path, image)
         return rows, cols
     except Exception as e:

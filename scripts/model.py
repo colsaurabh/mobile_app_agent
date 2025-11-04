@@ -3,6 +3,7 @@ from abc import abstractmethod
 from typing import List
 from http import HTTPStatus
 import sys
+import time
 
 import requests
 import dashscope
@@ -67,7 +68,17 @@ class OpenAIModel(BaseModel):
             "temperature": self.temperature,
             "max_completion_tokens": self.max_completion_tokens
         }
-        response = requests.post(self.base_url, headers=headers, json=payload).json()
+        try:
+            start_time = time.perf_counter()
+            response = requests.post(self.base_url, headers=headers, json=payload).json()
+            end_time = time.perf_counter()
+            delay_seconds = end_time - start_time
+
+            logger.debug(f"GPT API Call Response Time (milliseconds): {delay_seconds * 1000:.0f} ms")
+        except Exception as e:
+            logger.error(f"Got exceptions in gpt call {e}")
+            return False, f"Request failed: {e}"
+
         if "error" not in response:
             usage = response["usage"]
             prompt_tokens = usage["prompt_tokens"]
@@ -115,9 +126,15 @@ class GeminiModel(BaseModel):
         }
 
         try:
+            start_time = time.perf_counter()
             response = requests.post(url, json=payload, timeout=120)
+            end_time = time.perf_counter()
+            delay_seconds = end_time - start_time
+            logger.debug(f"Gemini API Call Response Time (milliseconds): {delay_seconds * 1000:.0f} ms")
+
             data = response.json()
         except Exception as e:
+            logger.error(f"Got exceptions in gemini call {e}")
             return False, f"Request failed: {e}"
 
         # Error handling
@@ -195,14 +212,14 @@ def parse_explore_rsp(rsp):
 
 def parse_grid_rsp(rsp):
     try:
-        observation = re.findall(r"Observation: (.*?)$", rsp, re.MULTILINE)[0]
-        think = re.findall(r"Thought: (.*?)$", rsp, re.MULTILINE)[0]
+        # observation = re.findall(r"Observation: (.*?)$", rsp, re.MULTILINE)[0]
+        # think = re.findall(r"Thought: (.*?)$", rsp, re.MULTILINE)[0]
         act = re.findall(r"Action: (.*?)$", rsp, re.MULTILINE)[0]
         last_act = re.findall(r"Summary: (.*?)$", rsp, re.MULTILINE)[0]
         readable = re.findall(r"ReadableSummarisation: (.*?)$", rsp, re.MULTILINE)[0]
 
-        logger.debug(f"Observation: => {observation}")
-        logger.debug(f"Thought: => {think}")
+        # logger.debug(f"Observation: => {observation}")
+        # logger.debug(f"Thought: => {think}")
         logger.info(f"Action: => {act}")
         logger.debug(f"Summary: => {last_act}")
         logger.debug(f"ReadableSummarisation: => {readable}")
