@@ -446,7 +446,7 @@ def voice_ask(prompt_text: str, max_seconds: int = 15) -> str:
             except Exception:
                 pass
         if text:
-            logger.show(f"(Human Response): {text}")
+            logger.show(f"(Human Response): {text}", sender="user")
             return text
     except Exception as e:
         logger.error(f"Voice input failed: {e}")

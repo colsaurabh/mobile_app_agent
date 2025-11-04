@@ -6,13 +6,14 @@ import os
 import re
 import sys
 import time
+import subprocess
 
 import prompts
 from config import load_config
 from device_controller import list_all_devices, DeviceController
 from utils import traverse_tree
 from model import parse_explore_rsp, parse_grid_rsp, OpenAIModel, GeminiModel
-from utils import draw_bbox_multi, draw_grid, area_to_xy, calculate_image_similarity
+from utils import draw_bbox_multi, draw_grid, area_to_xy, calculate_image_similarity, speak
 from logging_controller import get_logger
 
 arg_desc = "AppAgent Executor"
@@ -32,6 +33,18 @@ try:
 except Exception as e:
     logger.error(f"ERROR: Failed to load configuration: {e}")
     sys.exit(1)
+
+if configs.get("ENABLE_CHAT_INTERFACE", False):
+    # Start chat window as background process (main thread safe)
+    try:
+        subprocess.Popen(["python3", "scripts/chat_window.py"])
+        time.sleep(1)  # give UI time to start
+    except Exception as e:
+        logger.error(f"Chat window launch failed: {e}")
+
+    logger.show("Welcome to mobile agent of L&T Finance")
+    if configs.get("ENABLE_VOICE", False):
+        speak("Welcome to mobile agent of L&T Finance", True)
 
 try:
     if configs["REASONING_MODEL"] == "OpenAI":
@@ -145,7 +158,7 @@ if configs.get("ENABLE_VOICE", False):
     from utils import voice_ask
     try:
         task_desc = voice_ask(
-            "How can i help you",
+            "How can i help you?",
             max_seconds=5
         )
     except Exception:

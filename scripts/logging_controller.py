@@ -2,6 +2,14 @@ from enum import Enum
 from datetime import datetime
 
 from colorama import Fore, Style
+import sys
+
+from config import load_config
+try:
+    configs = load_config()
+except Exception as e:
+    logger.error(f"ERROR: Failed to load configuration: {e}")
+    sys.exit(1)
 
 def print_with_color(text: str, color=""):
     if color == "red":
@@ -108,11 +116,22 @@ class Logger:
             timestamp = self._get_timestamp()
             print_with_color(f"[{timestamp}] {text}", color)
 
-    def show(self, text: str, color="blue"):
+    def show(self, text: str, color="blue", sender="system"):
         """Show messages (shown in production mode)"""
         if self._should_print("SHOW"):
             timestamp = self._get_timestamp()
             print_with_color(f"[{timestamp}] {text}", color)
+
+            if configs.get("ENABLE_CHAT_INTERFACE", False):
+                try:
+                    import socket, json
+                    msg = json.dumps({"text": text, "sender": sender}).encode()
+                    s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+                    s.connect(("127.0.0.1", 5055))
+                    s.sendall(msg)
+                    s.close()
+                except Exception as e:
+                    pass
 
 
 
