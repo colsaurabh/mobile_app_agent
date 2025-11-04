@@ -6,6 +6,8 @@ import xml.etree.ElementTree as ET
 from PIL import Image
 import io
 import base64
+import threading
+import time
 
 import os
 import subprocess
@@ -59,54 +61,10 @@ def area_to_xy(area, subarea, height, width, rows, cols):
         x, y = x_0 + (width // cols) // 2, y_0 + (height // rows) // 2
     return x, y
 
-# Just backup of older function
-# def draw_grid(img_path, output_path, rows=None, cols=None, min_cell_px=40):
-#     """
-#     Draw a grid on the image.
-#     - If rows/cols are provided, they are used directly.
-#     - Otherwise, grid density is derived from min_cell_px (smaller => more cells).
-#     """
-#     try:
-#         def clamp(n, lo, hi):
-#             return max(lo, min(hi, n))
-
-#         min_cell_px = configs.get("GRID_SIZE", 40)
-
-#         image = cv2.imread(img_path)
-#         height, width, _ = image.shape
-#         color = (255, 116, 113)
-
-#         if rows is None or cols is None:
-#             # Derive rows/cols from desired minimum cell size
-#             rows = clamp(height // min_cell_px, 1, 100)
-#             cols = clamp(width // min_cell_px, 1, 100)
-
-#         # Compute actual cell size from rows/cols
-#         unit_height = max(1, height // rows)
-#         unit_width = max(1, width // cols)
-#         thick = max(1, int(max(unit_width, unit_height) // 50))
-
-#         for i in range(rows):
-#             for j in range(cols):
-#                 label = i * cols + j + 1
-#                 left = int(j * unit_width)
-#                 top = int(i * unit_height)
-#                 right = int((j + 1) * unit_width)
-#                 bottom = int((i + 1) * unit_height)
-#                 cv2.rectangle(image, (left, top), (right, bottom), color, thick // 2)
-#                 cv2.putText(image, str(label),
-#                             (left + int(unit_width * 0.05), top + int(unit_height * 0.3)),
-#                             0, max(0.5, 0.01 * unit_width), color, thick)
-#         cv2.imwrite(output_path, image)
-#         return rows, cols
-#     except Exception as e:
-#         logger.error(f"ERROR in draw_grid: {e}")
-#         return 0, 0
-
 def draw_grid(img_path, output_path, rows=None, cols=None, min_cell_px=40):
     """
     Draw a grid on the image.
-    - Dynamically skips numbering of leftmost and rightmost grid columns (device independent).
+    - Dynamically skips numbering of leftmost 2 and rightmost 1 grid columns (device independent).
     """
     try:
         def clamp(n, lo, hi):
@@ -125,11 +83,6 @@ def draw_grid(img_path, output_path, rows=None, cols=None, min_cell_px=40):
         unit_width = max(1, width // cols)
         thick = max(1, int(max(unit_width, unit_height) // 50))
 
-        # Define margin thresholds (percentage-based, so device-independent)
-        margin_threshold = 0.05  # 5% of width on each side
-        left_margin_limit = int(width * margin_threshold)
-        right_margin_limit = int(width * (1 - margin_threshold))
-
         for i in range(rows):
             for j in range(cols):
                 label = i * cols + j + 1
@@ -141,8 +94,8 @@ def draw_grid(img_path, output_path, rows=None, cols=None, min_cell_px=40):
 
                 cv2.rectangle(image, (left, top), (right, bottom), color, thick // 2)
 
-                # Skip numbering if near left or right 5% margins
-                if left_margin_limit < center_x < right_margin_limit:
+                # Skip first 2 left columns, last 1 right column
+                if j >= 2 and j < cols - 1:
                     cv2.putText(
                         image,
                         str(label),
@@ -388,22 +341,52 @@ def draw_bbox_multi(img_path, output_path, elem_list, record_mode=False, dark_mo
     cv2.imwrite(output_path, imgcv)
     return imgcv
 
-def speak(text: str):
-    # macOS native TTS; configurable
+_speak_lock = threading.Lock()
+_speaking = False
+
+def speak(text: str, background=False):
+    """Speak text with macOS TTS. Ensures only one speech at a time."""
+    global _speaking
+
     try:
-        if sys.platform == "darwin":
-            voice = configs.get("VOICE_TYPE", "Veena")
-            rate = configs.get("VOICE_SPEED", 170)
-            cmd = ["say"]
-            if voice:
-                cmd += ["-v", voice]
-            if rate:
-                cmd += ["-r", rate]
-            cmd += [text]
-            subprocess.run(cmd, check=False)
-    except Exception:
-        logger.error(f"ERROR: In speaking as exception {e}")
-        pass
+        if sys.platform != "darwin":
+            return  # only use 'say' on macOS
+
+        voice = configs.get("VOICE_TYPE", "Veena")
+        rate = configs.get("VOICE_SPEED", 170)
+
+        concurrent_voicing = configs.get("CONCURRENT_VOICING", False)
+        if not concurrent_voicing:
+            background = False
+
+        def _run_tts():
+            global _speaking
+            with _speak_lock:
+                if _speaking:
+                    # Wait until the current speech finishes
+                    while _speaking:
+                        print("waiting for speak lock to be released")
+                        time.sleep(0.1)
+                _speaking = True
+                try:
+                    cmd = ["say"]
+                    if voice:
+                        cmd += ["-v", voice]
+                    if rate:
+                        cmd += ["-r", str(rate)]
+                    cmd += [text]
+                    subprocess.run(cmd, check=False)
+                finally:
+                    _speaking = False
+
+        if background:
+            t = threading.Thread(target=_run_tts, daemon=True)
+            t.start()
+        else:
+            _run_tts()
+
+    except Exception as e:
+        logger.error(f"ERROR in speak(): {e}")
 
 def _record_wav_tmp(seconds=12, samplerate=16000, channels=1):
     try:
@@ -455,14 +438,15 @@ def voice_ask(prompt_text: str, max_seconds: int = 15) -> str:
             cost_per_minute = 0.006
             usage_cost = (max_seconds / 60) * cost_per_minute
             # logger.debug(f"Estimated transcription cost: ${usage_cost:.6f}")
-            speak(text)
+            elaborate_summary = f"You answered '{text}' for the question '{prompt_text}'"
+            speak(elaborate_summary, background=True)
         finally:
             try:
                 os.remove(wav_path)
             except Exception:
                 pass
         if text:
-            logger.show(f"(Voice Response): {text}")
+            logger.show(f"(Human Response): {text}")
             return text
     except Exception as e:
         logger.error(f"Voice input failed: {e}")

@@ -1,10 +1,9 @@
 import argparse
 import os
 import sys
-
 import subprocess
-from config import load_config
 
+from config import load_config
 from scripts.logging_controller import get_logger
 
 arg_desc = "AppAgent - deployment phase"
@@ -44,9 +43,9 @@ def temp_speak(text: str):
         logger.error(f"ERROR: In speaking as exception {e}")
         pass
 
-logger.show("Welcome to the mobile agent of L&T Finace")
+logger.show("Welcome to mobile agent of L&T Finace")
 if configs.get("ENABLE_VOICE", False):
-    temp_speak("Welcome to the mobile agent of L&T Finace")
+    temp_speak("Welcome to mobile agent of L&T Finace")
     
 
 # logger.show("Welcome to the deployment phase of AppAgent!\nBefore giving me the task, you should first tell me "

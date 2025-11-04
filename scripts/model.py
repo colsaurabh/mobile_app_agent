@@ -1,19 +1,15 @@
 import re
 from abc import abstractmethod
 from typing import List
-from http import HTTPStatus
 import sys
 import time
-
 import requests
-import dashscope
-
 from utils import encode_image, speak
 
-from config import load_config
-configs = load_config()
-
 from logging_controller import get_logger
+from config import load_config
+
+configs = load_config()
 try:
     logger = get_logger()
 except Exception as e:
@@ -130,7 +126,7 @@ class GeminiModel(BaseModel):
             response = requests.post(url, json=payload, timeout=120)
             end_time = time.perf_counter()
             delay_seconds = end_time - start_time
-            logger.debug(f"Gemini API Call Response Time (milliseconds): {delay_seconds * 1000:.0f} ms")
+            logger.debug(f"Gemini API Call Response Time (milliseconds): {delay_seconds * 1000:.0f} ms", "magenta")
 
             data = response.json()
         except Exception as e:
@@ -225,7 +221,8 @@ def parse_grid_rsp(rsp):
         logger.debug(f"ReadableSummarisation: => {readable}")
 
         if configs.get("ENABLE_VOICE", False):
-            speak(readable)
+            if not act.startswith("ask_human("):
+                speak(readable, background=True)
         if "FINISH" in act:
             return ["FINISH"]
         act_name = act.split("(")[0]

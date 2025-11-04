@@ -13,9 +13,9 @@ OPENAI_WHISPER_MODEL: "whisper-1"
 GEMINI_API_BASE: "https://generativelanguage.googleapis.com"
 GEMINI_API_MODEL: "gemini-2.5-flash" # gemini-2.5-pro or gemini-2.5-flash-lite
 
-MAX_COMPLETION_TOKENS: 500
+MAX_COMPLETION_TOKENS: 3000
 TEMPERATURE: 1 # 1 for more creative responses, 0 for more precise responses
-REQUEST_INTERVAL: 0.1  # Time in seconds between consecutive LLM requests
+REQUEST_INTERVAL: 0.5  # Time in seconds between consecutive LLM requests
 
 ANDROID_SCREENSHOT_DIR: "/sdcard"  # Set the directory on your Android device to store the intermediate screenshots. Make sure the directory EXISTS on your phone!
 ANDROID_XML_DIR: "/sdcard"  # Set the directory on your Android device to store the intermediate XML files used for determining locations of UI elements on your screen. Make sure the directory EXISTS on your phone!
@@ -47,6 +47,7 @@ IOS_DEVICES: ["00008130-001268D80EBA001C"]  # List of iOS device UDIDs, or leave
 ENABLE_VOICE: false
 VOICE_TYPE: "Veena" # e.g. "Samantha", "Alex", "Ava", "Victoria", "Veena", "Rishi"
 VOICE_SPEED: "185" # e.g. "170" (words per minute)
+CONCURRENT_VOICING: false
 
 ALWAYS_GRID: true
 DISABLE_XML: true
