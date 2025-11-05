@@ -42,9 +42,9 @@ if configs.get("ENABLE_CHAT_INTERFACE", False):
     except Exception as e:
         logger.error(f"Chat window launch failed: {e}")
 
-    logger.show("Welcome to mobile agent of L&T Finance")
-    if configs.get("ENABLE_VOICE", False):
-        speak("Welcome to mobile agent of L&T Finance", True)
+logger.show("Welcome to mobile agent of L&T Finance")
+if configs.get("ENABLE_VOICE", False):
+    speak("Welcome to mobile agent of L&T Finance", True)
 
 try:
     if configs["REASONING_MODEL"] == "OpenAI":
@@ -169,6 +169,7 @@ else:
     task_desc = input()
 
 round_count = 0
+last_observation = "None"
 last_act = "None"
 task_complete = False
 if configs.get("ALWAYS_GRID", False):
@@ -218,7 +219,7 @@ if human_override:
 
 while round_count < configs["MAX_ROUNDS"]:
     round_count += 1
-    logger.info(f"Round {round_count}")
+    logger.info(f"Round {round_count} ************************************************************************************************")
 
     try:
         screenshot_path = controller.get_screenshot(f"{dir_name}_{round_count}", task_dir)
@@ -328,7 +329,10 @@ while round_count < configs["MAX_ROUNDS"]:
         previous_screenshot_path = current_screenshot_path
 
     prompt = re.sub(r"<task_description>", task_desc, prompt)
+
+    prompt = re.sub(r"<last_observation>", last_observation, prompt)
     prompt = re.sub(r"<last_act>", last_act, prompt)
+
     prompt = re.sub(r"<human_answer_context>", human_answer_context, prompt)
     prompt = re.sub(r"<recovery_context>", special_action_context, prompt)
 
@@ -393,13 +397,15 @@ while round_count < configs["MAX_ROUNDS"]:
             if task_desc.lower() in ("q", "quit", "exit"):
                 task_complete = True
                 break                
+            last_observation = "None"
             last_act = "None"
             continue
         if act_name == "ERROR":
             continue
         
+        last_observation = res[-2]
         last_act = res[-1]
-        res = res[:-1]
+        res = res[:-2]
     
         if act_name == "tap":
             try:

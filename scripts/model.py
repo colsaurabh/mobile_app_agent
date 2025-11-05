@@ -208,13 +208,13 @@ def parse_explore_rsp(rsp):
 
 def parse_grid_rsp(rsp):
     try:
-        # observation = re.findall(r"Observation: (.*?)$", rsp, re.MULTILINE)[0]
-        # think = re.findall(r"Thought: (.*?)$", rsp, re.MULTILINE)[0]
+        observation = re.findall(r"Observation: (.*?)$", rsp, re.MULTILINE)[0]
+        think = re.findall(r"Thought: (.*?)$", rsp, re.MULTILINE)[0]
         act = re.findall(r"Action: (.*?)$", rsp, re.MULTILINE)[0]
         last_act = re.findall(r"Summary: (.*?)$", rsp, re.MULTILINE)[0]
         readable = re.findall(r"ReadableSummarisation: (.*?)$", rsp, re.MULTILINE)[0]
 
-        # logger.debug(f"Observation: => {observation}")
+        logger.debug(f"Observation: => {observation}")
         # logger.debug(f"Thought: => {think}")
         logger.info(f"Action: => {act}")
         logger.debug(f"Summary: => {last_act}")
@@ -230,28 +230,28 @@ def parse_grid_rsp(rsp):
             params = re.findall(r"tap\((.*?)\)", act)[0].split(",")
             area = int(params[0].strip())
             subarea = params[1].strip()[1:-1]
-            return [act_name + "_grid", area, subarea, last_act]
+            return [act_name + "_grid", area, subarea, observation, last_act]
         elif act_name == "text":
             input_str = re.findall(r"text\((.*?)\)", act)[0][1:-1]
-            return [act_name, input_str, last_act]
+            return [act_name, input_str, observation, last_act]
         elif act_name == "long_press":
             params = re.findall(r"long_press\((.*?)\)", act)[0].split(",")
             area = int(params[0].strip())
             subarea = params[1].strip()[1:-1]
-            return [act_name + "_grid", area, subarea, last_act]
+            return [act_name + "_grid", area, subarea, observation, last_act]
         elif act_name == "swipe":
             params = re.findall(r"swipe\((.*?)\)", act)[0].split(",")
             start_area = int(params[0].strip())
             start_subarea = params[1].strip()[1:-1]
             end_area = int(params[2].strip())
             end_subarea = params[3].strip()[1:-1]
-            return [act_name + "_grid", start_area, start_subarea, end_area, end_subarea, last_act]
+            return [act_name + "_grid", start_area, start_subarea, end_area, end_subarea, observation, last_act]
         elif act_name == "grid":
             return [act_name]
         elif act_name == "ask_human":
             # Extracts the question from ask_human("Some question?")
             question = re.findall(r'ask_human\("(.*?)"\)', act)[0]
-            return [act_name, question, last_act]
+            return [act_name, question, observation, last_act]
         else:
             logger.error(f"ERROR: Undefined act {act_name}!")
             return ["ERROR"]
