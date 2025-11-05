@@ -94,8 +94,11 @@ def draw_grid(img_path, output_path, rows=None, cols=None, min_cell_px=40):
 
                 cv2.rectangle(image, (left, top), (right, bottom), color, thick // 2)
 
+                skip_left_cols = configs.get("SKIP_LEFT_COLS", 0)
+                skip_right_cols = configs.get("SKIP_RIGHT_COLS", 0)
+
                 # Skip first 2 left columns, last 1 right column
-                if j >= 2 and j < cols - 1:
+                if j >= skip_left_cols and j < cols - skip_right_cols:
                     cv2.putText(
                         image,
                         str(label),

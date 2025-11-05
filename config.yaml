@@ -28,7 +28,9 @@ GRID_SIZE: 35 # 40 being a good grid size, 35 for phone, 43 for tablet(currently
 USE_SIMILARITY_COMPARISION: false
 ENABLE_HUMAN_OVERRIDE: false
 HUMAN_OVERRIDE_KEY: "|"
-ENABLE_CHAT_INTERFACE: true
+ENABLE_CHAT_INTERFACE: false
+SKIP_LEFT_COLS: 2
+SKIP_RIGHT_COLS: 2
 
 # Add these to config.yaml
 PLATFORM: "android"  # "android" or "ios"
