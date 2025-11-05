@@ -3,7 +3,7 @@ REASONING_MODEL: "Gemini"
 DOCUMENT_GENERATION_MODEL: "Gemini"
 
 OPENAI_API_KEY: ""
-GEMINI_API_KEY: ""
+GEMINI_API_KEY: "AIzaSyAQteFco8I7DOoVHP2_e_8g8q9wH2gc_IE"
 
 OPENAI_API_BASE: "https://api.openai.com/v1/chat/completions"
 OPENAI_API_MODEL: "gpt-5"
@@ -14,9 +14,9 @@ OPENAI_WHISPER_MODEL: "whisper-1"
 GEMINI_API_BASE: "https://generativelanguage.googleapis.com"
 GEMINI_API_MODEL: "gemini-2.5-flash" # gemini-2.5-pro
 
-MAX_COMPLETION_TOKENS: 3000
+MAX_COMPLETION_TOKENS: 1000
 TEMPERATURE: 1
-REQUEST_INTERVAL: 5  # Time in seconds between consecutive LLM requests
+REQUEST_INTERVAL: 0.1  # Time in seconds between consecutive LLM requests
 
 ANDROID_SCREENSHOT_DIR: "/sdcard"  # Set the directory on your Android device to store the intermediate screenshots. Make sure the directory EXISTS on your phone!
 ANDROID_XML_DIR: "/sdcard"  # Set the directory on your Android device to store the intermediate XML files used for determining locations of UI elements on your screen. Make sure the directory EXISTS on your phone!
@@ -25,9 +25,9 @@ DOC_REFINE: false  # Set this to true will make the agent refine existing docume
 MAX_ROUNDS: 100  # Set the round limit for the agent to complete the task
 DARK_MODE: false  # Set this to true if your app is in dark mode to enhance the element labeling
 MIN_DIST: 10  # The minimum distance between elements to prevent overlapping during the labeling process
-GRID_SIZE: 35 # 40 being a good grid size
+GRID_SIZE: 47 # 40 being a good grid size
 USE_SIMILARITY_COMPARISION: true
-ENABLE_HUMAN_OVERRIDE: false
+ENABLE_HUMAN_OVERRIDE: true
 HUMAN_OVERRIDE_KEY: "|"
 
 # Add these to config.yaml
@@ -44,11 +44,15 @@ IOS_AUTO_LAUNCH: false
 APPIUM_SERVER: "http://localhost:4723"
 IOS_DEVICES: ["00008130-001268D80EBA001C"]  # List of iOS device UDIDs, or leave empty for auto-detection
 
-ENABLE_VOICE: false
+ENABLE_VOICE: true
 VOICE_TYPE: "Veena" # e.g. "Samantha", "Alex", "Ava", "Victoria", "Veena", "Rishi"
 VOICE_SPEED: "185" # e.g. "170" (words per minute)
 
 ALWAYS_GRID: true
-DISABLE_XML: false
+DISABLE_XML: true
 
 LOG_MODE: "dev"  # "dev" or "stage" or "prod"
+
+# Chat Interface Settings
+ENABLE_CHAT_INTERFACE: true  # Set to true to enable the desktop chat interface
+ENABLE_PERSISTENT_CHAT_WITH_GEMINI_CHAT: false  # Set to true to enable persistent chat history with Gemini Chat API

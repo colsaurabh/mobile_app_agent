@@ -12,3 +12,4 @@ google-genai
 soundfile
 scikit-image
 pynput
+pillow  # For image handling in chat interface

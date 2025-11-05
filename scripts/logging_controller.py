@@ -113,6 +113,13 @@ class Logger:
         if self._should_print("SHOW"):
             timestamp = self._get_timestamp()
             print_with_color(f"[{timestamp}] {text}", color)
+        
+        # Send to chat interface if available
+        try:
+            from chat_interface import add_chat_message
+            add_chat_message("system", text, is_show_message=True)
+        except ImportError:
+            pass  # Chat interface not available
 
 
 

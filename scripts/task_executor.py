@@ -6,7 +6,7 @@ import os
 import re
 import sys
 import time
-
+import pynput
 import prompts
 from config import load_config
 from device_controller import list_all_devices, DeviceController
@@ -14,6 +14,15 @@ from utils import traverse_tree
 from model import parse_explore_rsp, parse_grid_rsp, OpenAIModel, GeminiModel
 from utils import draw_bbox_multi, draw_grid, area_to_xy, calculate_image_similarity
 from logging_controller import get_logger
+
+# Initialize chat interface if enabled
+chat_interface = None
+try:
+    from chat_interface import initialize_chat_interface, add_chat_message, close_chat_interface
+    chat_interface_available = True
+except ImportError:
+    chat_interface_available = False
+    print("Chat interface not available - install required dependencies")
 
 arg_desc = "AppAgent Executor"
 parser = argparse.ArgumentParser(formatter_class=argparse.RawDescriptionHelpFormatter, description=arg_desc)
@@ -32,6 +41,17 @@ try:
 except Exception as e:
     logger.error(f"ERROR: Failed to load configuration: {e}")
     sys.exit(1)
+
+# Initialize chat interface if enabled
+if configs.get("ENABLE_CHAT_INTERFACE", False) and chat_interface_available:
+    try:
+        chat_interface = initialize_chat_interface(configs)
+        logger.info("Chat interface initialized successfully")
+        logger.show("Mobile App Agent started - Chat interface active")
+        add_chat_message("system", "Mobile App Agent started - Chat interface active")
+    except Exception as e:
+        logger.warning(f"Failed to initialize chat interface: {e}")
+        chat_interface = None
 
 try:
     if configs["REASONING_MODEL"] == "OpenAI":
@@ -85,7 +105,7 @@ except Exception as e:
 
 no_doc = False
 if not os.path.exists(auto_docs_dir) and not os.path.exists(demo_docs_dir):
-    logger.show(f"No documentations found for the app {app}. Do you want to proceed with no docs? Enter y or n")
+    logger.info(f"No documentations found for the app {app}. Do you want to proceed with no docs? Enter y or n")
     user_input = ""
     while user_input != "y" and user_input != "n":
         user_input = input().lower()
@@ -155,6 +175,23 @@ else:
     logger.show("Please enter the description of the task to perform.")
     task_desc = input()
 
+def send_human_message_to_chat(content):
+    """Helper function to send human messages to chat interface"""
+    if chat_interface and configs.get("ENABLE_CHAT_INTERFACE", False):
+        add_chat_message("human", content)
+
+# Send initial task to chat
+send_human_message_to_chat(f"{task_desc}")
+def show_chat_history():
+    global mllm
+    if hasattr(mllm, 'get_chat_history'):
+        history = mllm.get_chat_history()
+        logger.info(f"Chat session has {len(history)} messages")
+        for i, msg in enumerate((history[-5:])):  # Show last 5 messages
+            role = msg.role
+            content = msg.parts[0].text if msg.parts else "No text"
+            logger.debug(f"Message {i}: {role}: {content[:1000]}...")
+
 round_count = 0
 last_act = "None"
 task_complete = False
@@ -168,7 +205,7 @@ disable_xml = configs.get("DISABLE_XML", False)
 
 pending_human_input = None
 pending_question = None
-special_action_used = False
+special_action_count = 0
 special_action_context = ""
 
 # This variable will hold the user's answer from the previous round
@@ -192,6 +229,9 @@ if human_override:
             if hasattr(key, 'char') and key.char == human_override_key:
                 human_override_triggered = True
                 logger.debug(f"Human override triggered via '{human_override_key}' key.")
+                # Add to chat interface
+                if chat_interface:
+                    add_chat_message("system", f"Human override triggered via '{human_override_key}' key")
         except Exception:
             pass
 
@@ -204,9 +244,10 @@ if human_override:
     key_thread.start()
 
 while round_count < configs["MAX_ROUNDS"]:
-    round_count += 1
     logger.info(f"Round {round_count}")
-
+    if round_count % 5 == 0:
+        show_chat_history()
+    round_count += 1
     try:
         screenshot_path = controller.get_screenshot(f"{dir_name}_{round_count}", task_dir)
         if screenshot_path == "ERROR":
@@ -229,7 +270,7 @@ while round_count < configs["MAX_ROUNDS"]:
         logger.debug("Human intervention triggered via human_override_triggered")
         human_override_context = f"VERY IMPORTANT: Human intervention triggered. You should leave the current action and ask human for the next action. Question to ask: **What should I do next?**"
         human_override_triggered = False
-
+        logger.info("Human override context set: " + human_override_context)
     if grid_on:
         rows, cols = draw_grid(screenshot_path, os.path.join(task_dir, f"{dir_name}_{round_count}_grid.png"))
         image = os.path.join(task_dir, f"{dir_name}_{round_count}_grid.png")
@@ -302,15 +343,21 @@ while round_count < configs["MAX_ROUNDS"]:
         current_screenshot_path = image
         similarity_score = calculate_image_similarity(previous_screenshot_path, current_screenshot_path)
         if similarity_score > 0.99:
-            if not special_action_used:
+            if special_action_count==0:
                 logger.debug(f"Screen unchanged; taking special recovery action (swipe up). Score is: {(similarity_score * 100):.2f}%")
-                special_action_used = True
-                special_action_context = "The previous action did not change the screen. Its imp to swipe up the screen from middle to see data before continuing \n"
+                special_action_count+= 1
+                special_action_context = "The previous action did not change the screen. Its imp to swipe up the screen from middle to see data before continuing.\n"
+            elif special_action_count==1:
+                logger.debug(f"Screen unchanged for 2nd time consecutive,so time for swipe down")
+                special_action_count+= 1
+                special_action_context="The previous action did not change the screen. Its imp to swipe down the screen from middle to see data before continuing.\n"
             else:
                 logger.debug(f"High similarity detected again but special_action_used already true. Score is: {(similarity_score * 100):.2f}%")
+                special_action_count = 0
+                special_action_context = ""
         else:
             logger.debug(f"Similarity score low and resetting special_action_used. Score is: {(similarity_score * 100):.2f}%")
-            special_action_used = False
+            special_action_count = 0
             special_action_context = ""
         previous_screenshot_path = current_screenshot_path
 
@@ -318,10 +365,13 @@ while round_count < configs["MAX_ROUNDS"]:
     prompt = re.sub(r"<last_act>", last_act, prompt)
     prompt = re.sub(r"<human_answer_context>", human_answer_context, prompt)
     prompt = re.sub(r"<recovery_context>", special_action_context, prompt)
-
+    
+    # Always replace human_override_context placeholder, even when empty
+    prompt = re.sub(r"<human_override_context>", human_override_context, prompt)
+    
     if human_override_context:
         logger.debug("Human intervention sending to llm prompt")
-        prompt = re.sub(r"<human_override_context>", human_override_context, prompt)
+        logger.debug(f"Override context being sent: {human_override_context}")
         human_override_context = ""
 
     try:
@@ -354,6 +404,9 @@ while round_count < configs["MAX_ROUNDS"]:
                 res = parse_grid_rsp(rsp)
             else:
                 res = parse_explore_rsp(rsp)
+            
+            # Extract and display agent's reasoning if available
+            
         except Exception as e:
             logger.error(f"ERROR: Failed to parse model response: {e}")
             logger.info("Retrying this round...")
@@ -365,6 +418,7 @@ while round_count < configs["MAX_ROUNDS"]:
         if act_name == "FINISH":
             if configs.get("ENABLE_VOICE", False):
                 from utils import voice_ask
+                GeminiModel.clear_session()
                 try:
                     task_desc = voice_ask(
                         "Please describe your next question or say quit or exit to stop",
@@ -470,7 +524,6 @@ while round_count < configs["MAX_ROUNDS"]:
                 if swipe_dir not in ["up", "down", "left", "right"]:
                     logger.warning(f"ERROR: Invalid swipe direction '{swipe_dir}'. Must be up, down, left, or right")
                     continue
-                
                 ret = controller.swipe(x, y, swipe_dir, dist)
                 if ret == "ERROR":
                     logger.error("ERROR: swipe execution failed")
@@ -574,10 +627,11 @@ while round_count < configs["MAX_ROUNDS"]:
                 else:
                     logger.show(question)
                     answer = input()
+                send_human_message_to_chat(answer)
+
             except Exception:
                 logger.show(question)
                 answer = input()
-
             pending_human_input = answer
             pending_question = question
             continue
@@ -599,3 +653,10 @@ elif round_count == configs["MAX_ROUNDS"]:
     logger.info("Task finished due to reaching max rounds")
 else:
     logger.error("Task finished unexpectedly")
+    
+
+# Close chat interface when done
+if chat_interface:
+    import time
+    time.sleep(5)
+    close_chat_interface()

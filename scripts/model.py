@@ -3,9 +3,14 @@ from abc import abstractmethod
 from typing import List
 from http import HTTPStatus
 import sys
-
+import time
 import requests
 import dashscope
+try:
+    import google.generativeai as genai
+    GEMINI_SDK_AVAILABLE = True
+except ImportError:
+    GEMINI_SDK_AVAILABLE = False
 
 from utils import encode_image, speak
 
@@ -36,7 +41,6 @@ class OpenAIModel(BaseModel):
         self.model = model
         self.temperature = temperature
         self.max_completion_tokens = max_completion_tokens
-
     def get_model_response(self, prompt: str, images: List[str]) -> (bool, str):
         content = [
             {
@@ -87,8 +91,69 @@ class GeminiModel(BaseModel):
         self.model = model
         self.temperature = float(temperature)
         self.max_completion_tokens = int(max_completion_tokens)
+        self.chat_session = None
+        if configs.get("ENABLE_PERSISTENT_CHAT_WITH_GEMINI_CHAT", False):
+            self._initialize_chat()
 
+    def _initialize_chat(self):
+        """Initialize Gemini chat session - it handles history automatically"""
+        if not GEMINI_SDK_AVAILABLE:
+            logger.warning("Gemini SDK not available. Using REST API without persistence.")
+            return
+            
+        try:
+            genai.configure(api_key=self.api_key)
+            model = genai.GenerativeModel(self.model)
+            # Start chat - Gemini stores the history automatically
+            self.chat_session = model.start_chat()
+            
+            logger.info(f"Gemini chat session started - history managed by Gemini")
+            
+        except Exception as e:
+            logger.error(f"Failed to start Gemini chat: {e}")
     def get_model_response(self, prompt: str, images: List[str]) -> (bool, str):
+        if self.chat_session:
+            try:
+                print("Using Gemini Chat Persistent session with history.")
+                return self._chat_response(prompt, images)
+            except Exception as e:
+                logger.error(f"Gemini Chat response failed: {e}")
+                return self.actual_model_response(prompt, images)
+        else:
+            print("Using Gemini session without history.")
+            return self.actual_model_response(prompt, images)
+    def _chat_response(self, prompt: str, images: List[str]) -> (bool, str):
+        """Use Gemini chat session - history is automatic"""
+        try:
+            # Prepare content
+            content = [prompt]
+            for img in images:
+                from PIL import Image
+                pil_image = Image.open(img)
+                content.append(pil_image)
+            
+            # Send to chat session - Gemini automatically includes history
+            start_time = time.perf_counter()
+            response = self.chat_session.send_message(
+                content,
+                generation_config=genai.types.GenerationConfig(
+                    temperature=self.temperature,
+                    max_output_tokens=self.max_completion_tokens
+                )
+            )
+            end_time = time.perf_counter()
+            delay_seconds = end_time - start_time
+            print(f"Gemini Chat Request Time (seconds): {delay_seconds:.4f}")
+            print(f"Gemini Chat Request Time (milliseconds): {delay_seconds * 1000:.2f} ms")
+        
+            # Gemini automatically tracks history, you can check it:
+            logger.debug(f"Chat history length: {len(self.chat_session.history)}")
+            return True, response.text
+        except Exception as e:
+            logger.error(f"Gemini chat failed: {e}")
+            return False, str(e)
+        
+    def actual_model_response(self, prompt: str, images: List[str]) -> (bool, str):
         # Build parts: text + inline images
         parts = [{"text": prompt}]
         for img in images:
@@ -115,8 +180,14 @@ class GeminiModel(BaseModel):
         }
 
         try:
+            start_time = time.perf_counter()
             response = requests.post(url, json=payload, timeout=120)
+            end_time = time.perf_counter()
+            delay_seconds = end_time - start_time
+            print(f"Gemini Request Time (seconds): {delay_seconds:.4f}")
+            print(f"Gemini Request Time (milliseconds): {delay_seconds * 1000:.2f} ms")
             data = response.json()
+           # print(f"data: {data}")
         except Exception as e:
             return False, f"Request failed: {e}"
 
@@ -141,7 +212,17 @@ class GeminiModel(BaseModel):
             # logger.debug(f"Token usage (Gemini) - prompt: {prompt_tokens}, completion: {completion_tokens}, total: {total_tokens}")
 
         return True, text if text else "``(No text in Gemini response)``"
+    def get_chat_history(self):
+        """Get the chat history from Gemini's session"""
+        if self.chat_session:
+            return self.chat_session.history
+        return []
 
+    def clear_session(self):
+        """Start fresh session"""
+        if GEMINI_SDK_AVAILABLE:
+            self._initialize_chat()
+            logger.info("Chat session cleared - new session started")
 
 def parse_explore_rsp(rsp):
     try:
@@ -195,18 +276,17 @@ def parse_explore_rsp(rsp):
 
 def parse_grid_rsp(rsp):
     try:
-        observation = re.findall(r"Observation: (.*?)$", rsp, re.MULTILINE)[0]
-        think = re.findall(r"Thought: (.*?)$", rsp, re.MULTILINE)[0]
+        # observation = re.findall(r"Observation: (.*?)$", rsp, re.MULTILINE)[0]
+        # think = re.findall(r"Thought: (.*?)$", rsp, re.MULTILINE)[0]
         act = re.findall(r"Action: (.*?)$", rsp, re.MULTILINE)[0]
         last_act = re.findall(r"Summary: (.*?)$", rsp, re.MULTILINE)[0]
         readable = re.findall(r"ReadableSummarisation: (.*?)$", rsp, re.MULTILINE)[0]
-
-        logger.debug(f"Observation: => {observation}")
-        logger.debug(f"Thought: => {think}")
+        # logger.debug(f"Observation: => {observation}")
+        # logger.debug(f"Thought: => {think}")
         logger.info(f"Action: => {act}")
-        logger.debug(f"Summary: => {last_act}")
+        # logger.debug(f"Summary: => {last_act}")
         logger.debug(f"ReadableSummarisation: => {readable}")
-
+        # readable = last_act
         if configs.get("ENABLE_VOICE", False):
             speak(readable)
         if "FINISH" in act:
