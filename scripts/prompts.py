@@ -66,8 +66,6 @@ This function is used to perform a swipe action on the smartphone screen, especi
 "start_area" is the integer label assigned to the grid area which marks the starting location of the swipe. "start_subarea" is a string representing the exact location to begin the swipe within the grid area. "end_area" is the integer label assigned to the grid area which marks the ending location of the swipe. "end_subarea" is a string representing the exact location to end the swipe within the grid area.
 The two subarea parameters can take one of the nine values: center, top-left, top, top-right, left, right, bottom-left, bottom, and bottom-right.
 Example: A simple use case can be swipe(21, "center", 25, "right"), which performs a swipe starting from the center of grid area 21 to the right part of grid area 25.
-**Date Picker Scroll Direction (IMPORTANT)(Critical Override):**
-   - **When interacting with a year or date picker: perform a **"swipe down" ie "scroll up"** swipe(411, "center", 651, "center") **
 **IMPORTANT SWIPE DIRECTION LOGIC:**
 - To reveal content BELOW the current view (scroll down the page): use "up"
 - To reveal content ABOVE the current view (scroll up the page): use "down"
