@@ -56,12 +56,24 @@ This function is usually callable when you see a keyboard showing in the lower h
     - Do **not** call `text("...")` unless the keyboard is visible.
     - For email fields: always convert the entire value to lowercase before entering it (e.g., "User.Name@Example.COM" -> "user.name@example.com").
 
-3. long_press(area: int, subarea: str)
+3. text_replace(text_input: str)
+This function is used to first delete the existing text and then insert text input in an input field/box. text_input is the string you want to insert and must be wrapped with double quotation marks. 
+Example: A simple use case can be text_replace("Hello, world!"), which deletes existing text in the text box and then inserts the string "Hello, world!" into the input area on the smartphone screen. 
+This function be used if we want to write the given input text after replacing the exisiting text in the text box.
+This function is usually callable when you see a keyboard showing in the lower half of the screen.
+**Text Input Policy:**
+- After the human provides a value for a text field:
+    - If the keyboard is visible, you may use `text_replace("...")` to enter the value.
+    - If the keyboard is NOT visible, tap to focus the textbox first (by grid area), then wait for the keyboard to appear.
+    - Do **not** call `text_replace("...")` unless the keyboard is visible.
+    - For email fields: always convert the entire value to lowercase before entering it (e.g., "User.Name@Example.COM" -> "user.name@example.com").
+
+4. long_press(area: int, subarea: str)
 This function is used to long press a grid area shown on the smartphone screen. "area" is the integer label assigned to a grid area shown on the smartphone screen. "subarea" is a string representing the exact location to long press within 
 the grid area. It can take one of the nine values: center, top-left, top, top-right, left, right, bottom-left, bottom, and bottom-right.
 Exmple: A simple use case can be long_press(7, "top-left"), which long presses the top left part of the grid area labeled with the number 7.
 
-4. swipe(start_area: int, start_subarea: str, end_area: int, end_subarea: str)
+5. swipe(start_area: int, start_subarea: str, end_area: int, end_subarea: str)
 This function is used to perform a swipe action on the smartphone screen, especially when you want to interact with a scroll view or a slide bar. 
 "start_area" is the integer label assigned to the grid area which marks the starting location of the swipe. "start_subarea" is a string representing the exact location to begin the swipe within the grid area. "end_area" is the integer label assigned to the grid area which marks the ending location of the swipe. "end_subarea" is a string representing the exact location to end the swipe within the grid area.
 The two subarea parameters can take one of the nine values: center, top-left, top, top-right, left, right, bottom-left, bottom, and bottom-right.
@@ -82,7 +94,7 @@ Example: A simple use case can be swipe(21, "center", 25, "right"), which perfor
    - If after swiping up the field still isn't visible, perform an additional **swipe up (short)** to scroll further.
    - Avoid over-scrolling (multiple long swipes in a row).
 
-5. ask_human(question: str)
+6. ask_human(question: str)
 Use this function ONLY when you need to ask the user for a specific value required to complete the task, 
 such as a ** username, password, name, location, date of birth, PAN, ** or any personal detail that you cannot infer from the screen. 
 The "question" should be a clear, natural language question that will be displayed to the human user.

@@ -99,6 +99,32 @@ class AndroidController:
         adb_command = f"adb -s {self.device} shell input tap {x} {y}"
         ret = execute_adb(adb_command)
         return ret
+
+    def clear_text_field(self):
+        """
+        Clears text from focused input field by repeatedly sending BACKSPACE.
+        Works on all Android OEMs, keyboards, and field types.
+        """
+        # Move cursor to start, then to end (forces correct cursor position)
+        adb_command = f"adb -s {self.device} shell input keyevent KEYCODE_MOVE_HOME"
+        ret = execute_adb(adb_command)
+        adb_command = f"adb -s {self.device} shell input keyevent KEYCODE_MOVE_END"
+        ret = execute_adb(adb_command)
+
+        # Press DEL 20 times (enough for any text field)
+        adb_command = f"adb -s {self.device} shell input keyevent KEYCODE_DEL"
+        for _ in range(20):
+            ret = execute_adb(adb_command)
+        return ret
+
+    def text_replace(self, input_str):
+        """Input text on Android device."""
+        input_str = input_str.replace(" ", "%s")
+        input_str = input_str.replace("'", "")
+        self.clear_text_field()
+        adb_command = f"adb -s {self.device} shell input text {input_str}"
+        ret = execute_adb(adb_command)
+        return ret
     
     def text(self, input_str):
         """Input text on Android device."""

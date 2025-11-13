@@ -456,6 +456,37 @@ while round_count < configs["MAX_ROUNDS"]:
             except Exception as e:
                 logger.error(f"ERROR: Unexpected error during text input: {e}")
                 continue
+        elif act_name == "text_replace":
+            # Saurabh: Check this code
+            try:
+                _, input_str = res
+
+                if input_str.strip() == "<HUMAN_INPUT>":
+                    try:
+                        input_str = pending_human_input
+                        if input_str is None:
+                            logger.warning('No stored input available. Ask first via ask_human("...").')
+                            continue
+                    except NameError:
+                        logger.warning('No stored input available. Ask first via ask_human("...").')
+                        continue
+
+                ret = controller.text_replace(input_str)
+                if ret == "ERROR":
+                    logger.error("ERROR: text execution failed")
+                    continue
+
+                ret = controller.tap(width // 2, height // 10)
+                # Tapping to close the keyboard
+                if ret == "ERROR":
+                    logger.error("ERROR: tap execution failed for keyboard dismissal")
+                    continue
+            except (ValueError, TypeError) as e:
+                logger.error(f"ERROR: Invalid text parameters: {e}")
+                continue
+            except Exception as e:
+                logger.error(f"ERROR: Unexpected error during text input: {e}")
+                continue
         elif act_name == "long_press":
             try:
                 _, area = res

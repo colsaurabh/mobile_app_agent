@@ -234,6 +234,9 @@ def parse_grid_rsp(rsp):
         elif act_name == "text":
             input_str = re.findall(r"text\((.*?)\)", act)[0][1:-1]
             return [act_name, input_str, observation, last_act]
+        elif act_name == "text_replace":
+            input_str = re.findall(r"text_replace\((.*?)\)", act)[0][1:-1]
+            return [act_name, input_str, observation, last_act]
         elif act_name == "long_press":
             params = re.findall(r"long_press\((.*?)\)", act)[0].split(",")
             area = int(params[0].strip())

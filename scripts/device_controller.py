@@ -77,6 +77,10 @@ class DeviceController:
         """Input text string."""
         return self.controller.text(input_str)
     
+    def text_replace(self, input_str):
+        """Input text string."""
+        return self.controller.text_replace(input_str)
+
     def long_press(self, x, y, duration=1000):
         """Long press at coordinates (x, y) for duration milliseconds."""
         return self.controller.long_press(x, y, duration)
