@@ -348,16 +348,11 @@ _speak_lock = threading.Lock()
 _speaking = False
 
 def speak(text: str, background=False):
-    """Speak text with macOS TTS. Ensures only one speech at a time."""
+    """Cross-platform text-to-speech with background support and speech queuing."""
     global _speaking
 
     try:
-        if sys.platform != "darwin":
-            return  # only use 'say' on macOS
-
-        voice = configs.get("VOICE_TYPE", "Veena")
-        rate = configs.get("VOICE_SPEED", 170)
-
+        # Get voice configuration
         concurrent_voicing = configs.get("CONCURRENT_VOICING", False)
         if not concurrent_voicing:
             background = False
@@ -372,13 +367,37 @@ def speak(text: str, background=False):
                         time.sleep(0.1)
                 _speaking = True
                 try:
-                    cmd = ["say"]
-                    if voice:
-                        cmd += ["-v", voice]
-                    if rate:
-                        cmd += ["-r", str(rate)]
-                    cmd += [text]
-                    subprocess.run(cmd, check=False)
+                    if sys.platform == "darwin":
+                        # macOS native TTS
+                        voice = configs.get("VOICE_TYPE", "Veena")
+                        rate = configs.get("VOICE_SPEED", 170)
+                        cmd = ["say"]
+                        if voice:
+                            cmd += ["-v", voice]
+                        if rate:
+                            cmd += ["-r", str(rate)]
+                        cmd += [text]
+                        subprocess.run(cmd, check=False)
+
+                    else:
+                        # Windows / Linux fallback using pyttsx3
+                        import pyttsx3
+                        engine = pyttsx3.init()
+                        engine.setProperty("rate", configs.get("VOICE_SPEED", 170))
+
+                        # Handle voice selection for Windows
+                        voice_type = configs.get("VOICE_TYPE", "english")
+                        voices = engine.getProperty('voices')
+
+                        # Try to find a matching voice
+                        for voice in voices:
+                            if voice_type.lower() in voice.name.lower():
+                                engine.setProperty('voice', voice.id)
+                                break
+
+                        engine.say(text)
+                        engine.runAndWait()
+
                 finally:
                     _speaking = False
 
@@ -391,10 +410,26 @@ def speak(text: str, background=False):
     except Exception as e:
         logger.error(f"ERROR in speak(): {e}")
 
-def _record_wav_tmp(seconds=12, samplerate=16000, channels=1):
+def _record_wav_tmp(seconds=12):
     try:
         # Record audio from default input into a temp wav file and return its path
-        audio = sd.rec(int(seconds * samplerate), samplerate=samplerate, channels=channels, dtype="int16")
+        path = ""
+        samplerate = ""
+        channels = ""
+        if sys.platform == "darwin":
+            samplerate = 16000
+            channels = 1
+            audio = sd.rec(int(seconds * samplerate), samplerate=samplerate, channels=channels, dtype="int16")
+        else:
+            device_index = 15
+            samplerate = 44100
+            channels = 2
+
+            dev_info = sd.query_devices(device_index)
+            if dev_info["max_input_channels"] < 1:
+                raise RuntimeError(f"Device {device_index} is not a valid input device.")
+            audio = sd.rec(int(seconds * samplerate), samplerate=samplerate, channels=channels, dtype="int16", device=device_index)
+
         sd.wait()
         fd, path = tempfile.mkstemp(suffix=".wav")
         os.close(fd)
